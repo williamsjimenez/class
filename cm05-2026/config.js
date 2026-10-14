@@ -1,5 +1,4 @@
 window.CM05_CONFIG = {
-  // Datos PÚBLICOS de conexión de Supabase. NUNCA colocar aquí service_role.
-  supabaseUrl: "",
-  publishableKey: ""
+  supabaseUrl: "https://bvvexxpfuurjpwjmlkak.supabase.co",
+  publishableKey: "sb_publishable_Xo31scghnaI8YfIorC7H6w_04mcPLZi"
 };
