@@ -39,110 +39,180 @@ progress{width:100%;height:10px;accent-color:var(--teal)}
 footer{text-align:center;color:#6f8487;font-size:12px;padding:22px}
 @media(max-width:880px){.shell{display:block}aside{position:static;margin-bottom:15px}nav{display:flex;flex-wrap:wrap;gap:4px}nav button{width:auto}.panelgrid{display:block}.sticky-card{position:static}.two,.choices{grid-template-columns:1fr}.hero h2{font-size:24px}}
 </style></head><body>
-<header><div><h1>CM05 · Laboratorio de Diseño Metodológico</h1><p>Seminario de Investigación · 2026 · La pregunta guía el método</p></div><a class="toplink" href="https://github.com/williamsjimenez/class/tree/main/cm05-2026" target="_blank" rel="noopener">Repositorio GitHub ↗</a></header>
-<div class="shell"><aside><h2>Navegación</h2><nav id="nav"></nav><div class="warn">Este portal guarda los avances en el navegador. Todavía no envía trabajos ni sincroniza grupos en tiempo real. Descarga respaldos al terminar.</div></aside>
+<header><div><h1>CM05 · Laboratorio de Diseño Metodológico</h1><p>Seminario de Investigación · 2026 · La pregunta guía el método</p></div><span class='badge'>Acceso mediante navegador · No requiere GitHub</span></header>
+<div class="shell"><aside><h2>Navegación</h2><nav id="nav"></nav><div class='warn'>El profesor administra el curso y sus permisos. Los estudiantes no necesitan acceso a GitHub ni subir archivos.</div></aside>
 <main><section class="hero"><div class="eyebrow">APRENDER INVESTIGANDO</div><h2>De tu pregunta a un método defendible.</h2><p>Desarrolla tu propio diseño mediante decisiones sucesivas. Las categorías sirven para orientarte; puedes agregar las que necesites y justificar cada elección.</p></section>
 <div id="root"></div><footer>Tarea 5 · Trabajo en grupo · 1.500 palabras · 50% metodología, 25% expertos, 25% entrevista · 15.11.2026</footer></main></div><div id="notice" role="status"></div>
-<script>
+<script src="config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script>
 (function(){
 "use strict";
-var BASE=[
-[1,"Poblaciones de aves migratorias"],[2,"Rellenos sanitarios"],[3,"Marine protected areas in Chilean Patagonia"],
-[4,"Sustainable development"],[5,"Salmonicultura y desarrollo territorial en Chiloé"],
-[6,"Crecimiento regional y urbano"],[7,"Instalación de parques eólicos y turismo"],
-[8,"El libre acceso a los recursos comunes provoca sobreexplotación"],
-[9,"Conflictos socioambientales y el rol del turismo"],[10,"Desarrollo económico en clúster y gobierno local en Chile"],
-[11,"Consecuencias socioeconómicas y ambientales"],[12,"Extracción adoptada por los recolectores"],
-[13,"Expansión de la salmonicultura"],[14,"Salmonicultura y desarrollo territorial en Chiloé"],
-[15,"Tema pendiente de definir"],[16,"Tema pendiente de definir"]
-].map(function(x){return {id:x[0],tema:x[1],integrantes:"",pregunta_sugerida:""}});
-var CATALOG={
+var C=window.CM05_CONFIG||{},ready=!!(C.supabaseUrl&&C.publishableKey);
+var sb=(ready&&window.supabase)?window.supabase.createClient(C.supabaseUrl,C.publishableKey):null;
+var user=null, membership=null,groups=[],allAnswers=[],allMembers=[],myGroup=null,step=0,tab="work";
+var A={},pending={},timers={},channel=null,teacher=false,busy=false;
+var oldTopics=[
+"poblaciones de aves migratorias","rellenos sanitarios","marine protected areas in Chilean Patagonia",
+"Sustainable development","Salmonicultura y desarrollo territorial en Chiloé",
+"Crecimiento regional y urbano","Instalación de parques eólicos y turismo",
+"El libre acceso a los recursos comunes provoca sobreexplotación",
+"Conflictos socioambientales y el rol del turismo","Desarrollo económico en clúster y gobierno local en Chile",
+"Consecuencias socioeconómicas y ambientales","Extracción adoptada por los recolectores",
+"Expansión de la salmonicultura","Salmonicultura y desarrollo territorial en Chiloé",
+"Tema pendiente de definir","Tema pendiente de definir"];
+var categories={
 enfoque:["Cualitativo","Cuantitativo","Mixto","Otro enfoque"],
-diseno:["Estudio de caso","Estudio comparativo","Etnografía","Fenomenología","Teoría fundamentada","Investigación-acción","Encuesta transversal","Estudio longitudinal","Diseño cuasiexperimental","Diseño experimental","Métodos mixtos convergentes","Métodos mixtos secuenciales"],
-tecnicas:["Entrevistas semiestructuradas","Entrevistas en profundidad","Grupos focales","Observación","Observación participante","Análisis documental","Análisis de prensa","Encuesta","Datos administrativos","Bases estadísticas secundarias","Datos espaciales","Archivos históricos","Material audiovisual"],
-muestreo:["Intencional por criterios","Muestreo teórico","Máxima variación","Bola de nieve","Conveniencia justificada","Aleatorio simple","Estratificado","Censal","Selección de casos críticos"],
-analisis:["Análisis temático","Análisis de contenido cualitativo","Análisis del discurso","Codificación fundamentada","Análisis de procesos","Comparación entre casos","Estadística descriptiva","Regresión","Series temporales","Análisis espacial","Integración de datos cualitativos y cuantitativos"],
-calidad:["Credibilidad","Transferibilidad","Dependencia","Confirmabilidad / verificabilidad","Triangulación de fuentes","Reflexividad","Registro de decisiones","Casos negativos","Validez de constructo","Validez interna","Fiabilidad de medición","Representatividad estadística","Prueba piloto"]
+diseno:["Estudio de caso","Estudio comparativo","Etnografía","Fenomenología","Teoría fundamentada","Investigación acción","Diseño transversal","Diseño longitudinal","Diseño experimental","Diseño cuasiexperimental","Mixto convergente","Mixto secuencial"],
+tecnicas:["Entrevistas semiestructuradas","Entrevistas abiertas","Grupos focales","Observación","Observación participante","Análisis documental","Análisis de prensa","Encuesta","Datos administrativos","Datos secundarios","Datos espaciales","Archivos históricos"],
+muestreo:["Intencional por criterios","Teórico","Bola de nieve","Máxima variación","Casos críticos","Por conveniencia","Aleatorio simple","Estratificado","Censal"],
+analisis:["Codificación temática","Análisis de contenido","Análisis del discurso","Teoría fundamentada","Análisis de procesos","Comparación de casos","Estadística descriptiva","Modelos de regresión","Análisis de series temporales","Análisis espacial","Integración cualitativa y cuantitativa"],
+calidad:["Credibilidad","Transferibilidad","Dependencia","Confirmabilidad","Reflexividad","Triangulación de fuentes","Registro de decisiones","Validez de constructo","Validez interna","Fiabilidad","Representatividad","Prueba piloto"]
 };
-var STEPS=[
-["Pregunta de investigación","Delimita qué quieres saber, sobre qué caso, dónde y durante qué período."],
-["Elección del enfoque","Decide entre enfoques cualitativo, cuantitativo, mixto u otro y explica qué evidencia requiere tu pregunta."],
-["Diseño y métodos","Escoge el diseño de investigación y describe cómo se aplicará a tu caso."],
-["Fuentes y producción de datos","Selecciona técnicas, fuentes y participantes, y explica cómo obtendrás los datos."],
-["Análisis y justificación","Indica cómo analizarás la información. Argumenta ventajas y limitaciones con bibliografía."],
-["Calidad científica","Define criterios de calidad y acciones verificables para cumplirlos."],
-["Entrevistas exploratorias","Explica qué aprenderás de expertos y cómo podrían mejorar tu proyecto."],
-["Directorio de expertos","Identifica personas relevantes y justifica su selección. Conserva sus contactos en privado."],
-["Guion de entrevistas","Elabora y ordena preguntas abiertas, sin inducir respuestas."],
-["Integración y entrega","Justifica tres o cuatro preguntas clave y comprueba la coherencia del diseño completo."]
+var steps=[
+{title:"Delimitar la pregunta",intro:"Una buena pregunta permite decidir qué información debe producir la investigación.",fields:[["pregunta","Pregunta de investigación"],["problema","Problema que quieres comprender o explicar"],["caso","Caso y unidad de análisis"],["territorio","Territorio"],["periodo","Período de estudio"]]},
+{title:"Elegir el enfoque metodológico",intro:"Elige lo cualitativo, cuantitativo o mixto por lo que necesitas conocer; no por preferencia personal.",cats:["enfoque"],fields:[["proposito","¿Qué necesitas conocer para responder la pregunta?"],["enfoque_justificacion","¿Por qué ese enfoque es pertinente?"]]},
+{title:"Seleccionar el diseño",intro:"El diseño articula la lógica de investigación. Para la Tarea 5 debes argumentar la estrategia de estudio de caso.",cats:["diseno"],fields:[["diseno_justificacion","¿Por qué este diseño y por qué ese caso?"],["alternativas","¿Qué otras opciones consideraste y por qué las descartas?"]]},
+{title:"Identificar fuentes y técnicas",intro:"Especifica de dónde provendrá la evidencia, cómo accederás y cómo registrarás los datos.",cats:["tecnicas","muestreo"],fields:[["fuentes","Fuentes, unidades de observación y participantes"],["produccion","Procedimiento de producción y registro de datos"]]},
+{title:"Planificar el análisis",intro:"La recolección no es el análisis. Describe cómo pasarás de datos a argumentos científicos.",cats:["analisis"],fields:[["analisis_plan","Fases concretas del análisis"],["ventajas","Ventajas del método elegido"],["limitaciones","Limitaciones y forma de afrontarlas"],["bibliografia","Argumentos y citas de la bibliografía del curso"]]},
+{title:"Garantizar la calidad",intro:"No basta con seleccionar criterios de calidad: cada uno requiere acciones verificables.",cats:["calidad"],fields:[["calidad_medidas","¿Cómo aplicarás concretamente los criterios de calidad?"],["etica","Consentimiento, privacidad, riesgos y reflexividad"]]},
+{title:"Justificar entrevistas exploratorias",intro:"Las entrevistas exploratorias sirven para mejorar el diseño: contextualizar, detectar actores y revisar supuestos.",fields:[["entrevistas_proposito","¿Qué aprenderás con las entrevistas exploratorias?"],["cambios_posibles","¿Qué hallazgo te llevaría a modificar la pregunta o el diseño?"]]},
+{title:"Construir el directorio de expertos",intro:"Anota contactos profesionales relevantes. Solo tu grupo y el profesor pueden acceder a los datos.",experts:true},
+{title:"Diseñar el hilo conductor",intro:"Empieza por preguntas abiertas de contexto y continúa hacia procesos, relaciones y posibles contradicciones.",questions:true},
+{title:"Justificar y revisar el proyecto",intro:"Marca tres o cuatro preguntas principales y explica cómo contribuyen a tu pregunta de investigación.",justifications:true,fields:[["integracion","Coherencia entre pregunta, método, fuentes, análisis y entrevistas"],["pendientes","¿Qué falta completar o verificar antes del 15 de noviembre?"]]}
 ];
-var groups=load("cm05_public_groups",BASE),catalog=load("cm05_catalog",CATALOG),gid=Number(localStorage.getItem("cm05_current_group")||0),stage=0,view="home";
-function load(k,otherwise){try{var v=JSON.parse(localStorage.getItem(k));return v||JSON.parse(JSON.stringify(otherwise))}catch(e){return JSON.parse(JSON.stringify(otherwise))}}
-function esc(v){return String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;")}
-function notice(s){var el=document.getElementById("notice");el.textContent=s;el.style.display="block";clearTimeout(notice.t);notice.t=setTimeout(function(){el.style.display="none"},3400)}
-function chosen(){return groups.find(function(g){return g.id===gid})}
-function initial(){return {campos:{},opciones:{},extras:{},expertos:[],preguntas:[],updated:null}}
-function work(){return load("cm05_work_"+gid,initial())}
-var d=gid?work():initial();
-function save(){if(!gid)return;d.updated=new Date().toISOString();localStorage.setItem("cm05_work_"+gid,JSON.stringify(d))}
-function storeGroups(){localStorage.setItem("cm05_public_groups",JSON.stringify(groups))}
-function field(k,name,placeholder){return '<label class="label" for="f_'+k+'">'+esc(name)+'</label><textarea id="f_'+k+'" data-field="'+k+'" placeholder="'+esc(placeholder||"Escribe una respuesta argumentada...")+'">'+esc(d.campos[k]||"")+'</textarea>'}
-function input(k,name){return '<label class="label" for="f_'+k+'">'+esc(name)+'</label><input id="f_'+k+'" data-field="'+k+'" value="'+esc(d.campos[k]||"")+'">'}
-function category(k,title,help){var values=catalog[k]||[],saved=d.opciones[k]||[];return '<div class="mini"><strong>'+esc(title)+'</strong><p class="hint">'+esc(help)+'</p><div class="choices">'+values.map(function(v){return '<label class="choice"><input type="checkbox" data-category="'+k+'" data-value="'+esc(v)+'" '+(saved.includes(v)?"checked":"")+'>'+esc(v)+'</label>'}).join("")+'</div><div class="row" style="margin-top:10px"><input style="flex:1;min-width:150px" id="new_'+k+'" placeholder="Agregar una categoría propia"><button class="secondary" data-add="'+k+'">+ Agregar</button></div></div>'}
-function counter(){return STEPS.filter(function(_,i){return hasStep(i)}).length}
-function hasStep(i){var f=d.campos;return Boolean([f.pregunta,f.proposito,(d.opciones.enfoque||[]).length,(d.opciones.diseno||[]).length,(d.opciones.tecnicas||[]).length,f.analisis,(d.opciones.calidad||[]).length,f.exploratorias,d.expertos.length,d.preguntas.length][i])}
-function nav(){var items=[["home","Grupos"],["work","Diseño metodológico"],["teacher","Editar grupos"],["export","Revisar / exportar"]];document.getElementById("nav").innerHTML=items.map(function(x){return '<button class="'+(view===x[0]?"active":"")+'" data-view="'+x[0]+'">'+esc(x[1])+'</button>'}).join("")}
-function home(){return '<div class="card"><div class="row between"><h3>Proyectos del seminario</h3><span class="badge">'+groups.length+' grupos</span></div><p class="hint">Los temas provienen de la matriz del curso. Los integrantes pueden cargarse privadamente desde el panel de edición; los nombres no están publicados en GitHub.</p><div class="grid">'+groups.map(function(g){return '<button class="group-card" data-group="'+g.id+'"><span class="tag">GRUPO '+String(g.id).padStart(2,"0")+'</span><strong>'+esc(g.tema)+'</strong><small>'+esc(g.integrantes||"Integrantes reservados · cargar en este navegador")+'</small></button>'}).join("")+'</div></div><div class="card"><h3>¿Qué vas a construir?</h3><p>Comenzarás por la pregunta y avanzarás hacia el enfoque, las técnicas, el análisis, la calidad, los expertos y el guion. Las decisiones pueden revisarse; la metodología no es una lista automática de casillas.</p></div>'}
-function wstage(){
-var g=chosen(),f=d.campos,s='<div class="card"><div class="row between"><h3>Grupo '+gid+' · '+esc(g.tema)+'</h3><span class="badge">'+(stage+1)+' / 10</span></div><p class="hint">'+esc(g.integrantes||"Integrantes pendientes de cargar")+" · Cambios guardados en este navegador</p><progress value='"+counter()+"' max='10'></progress><div class='steps'>"+STEPS.map(function(x,i){return '<button data-step="'+i+'" class="'+(stage===i?"active":hasStep(i)?"done":"")+'">'+(i+1)+'</button>'}).join("")+'</div></div>';
-s+='<div class="panelgrid"><div class="card"><span class="badge">PASO '+(stage+1)+'</span><h3 style="margin-top:12px">'+esc(STEPS[stage][0])+'</h3><p class="muted">'+esc(STEPS[stage][1])+'</p>';
-if(stage===0){s+=field("tema_ajustado","Título provisional","Precisa el tema y el fenómeno que estudiarás.");s+=field("problema","Problema de investigación","¿Qué no conocemos todavía?");s+=field("pregunta","Pregunta de investigación","¿Cómo, por qué, qué relación o cuánto?");s+=input("caso","Caso y unidad de análisis");s+=input("territorio","Territorio");s+=input("periodo","Período de estudio");}
-if(stage===1){s+=field("proposito","¿Qué necesitas conocer para responder tu pregunta?","Comprender procesos, estimar relaciones, contrastar explicaciones...");s+=category("enfoque","Enfoque metodológico","Elige el que mejor responda a la pregunta. Selecciona solo combinaciones coherentes.");s+=field("justificar_enfoque","¿Por qué este enfoque y no otro?","Relaciona la pregunta con la evidencia necesaria.");}
-if(stage===2){s+=category("diseno","Diseño de investigación","La Tarea 5 exige justificar el estudio de caso; el catálogo general permite explorar otros diseños.");s+=field("justificar_diseno","Justificación y delimitación del diseño","¿Por qué ese caso y cómo permite producir conocimiento?");}
-if(stage===3){s+=category("tecnicas","Técnicas de producción o recolección","Puedes combinar técnicas compatibles y explicar el aporte de cada una.");s+=category("muestreo","Selección de casos y participantes","No todos los diseños requieren muestreo probabilístico.");s+=field("fuentes","Fuentes concretas y acceso a la información");s+=field("procedimiento","Procedimientos de registro y obtención de datos");}
-if(stage===4){s+=category("analisis","Estrategias de análisis","No confundir entrevistar con analizar: explica el tratamiento de la evidencia.");s+=field("analisis","¿Cómo analizarás los datos?","Describe etapas de organización, codificación, estimación o integración según corresponda.");s+=field("ventajas","Ventajas específicas de tu decisión");s+=field("limitaciones","Desventajas y medidas para enfrentarlas");s+=field("bibliografia","Argumentos y citas de la bibliografía del curso");}
-if(stage===5){s+=category("calidad","Criterios de calidad pertinentes","Selecciona criterios compatibles con tu enfoque.");s+=field("calidad_medidas","¿Qué harás para aplicar cada criterio?","Triangulación justificada, auditoría, prueba piloto, validez de instrumentos...");s+=field("etica","Protección de participantes, consentimiento y privacidad");}
-if(stage===6){s+=field("exploratorias","¿Para qué servirán las entrevistas exploratorias con expertos?","¿Qué descubrirás para mejorar la pregunta, el caso o el diseño?");s+=field("ajustes","¿Qué descubrimiento podría obligarte a modificar el proyecto?");}
-if(stage===7){s+='<p class="hint">Registra nombre, organización, función, correo, teléfono institucional, web y argumento de selección. Estos datos permanecen en tu navegador y en archivos privados que descargues.</p>'+d.expertos.map(function(e,i){return '<div class="mini"><div class="row between"><b>Experto '+(i+1)+'</b><button class="secondary" data-remove-expert="'+i+'">Eliminar</button></div>'+["nombre","organizacion","funcion","email","telefono","web","justificacion"].map(function(k){return '<label class="label">'+esc(k.charAt(0).toUpperCase()+k.slice(1))+'</label><input data-expert="'+i+'" data-col="'+k+'" value="'+esc(e[k]||"")+'">' }).join("")+'</div>'}).join("")+'<button class="btn" data-add-expert>+ Añadir experto</button>';}
-if(stage===8){s+='<p class="hint">Usa preguntas abiertas y ordénalas desde el contexto hacia los procesos, conflictos y cierre.</p>'+d.preguntas.map(function(q,i){return '<div class="mini"><div class="row between"><b>Pregunta '+(i+1)+'</b><div class="row"><button class="secondary" data-move="'+i+'" data-dir="-1">↑</button><button class="secondary" data-move="'+i+'" data-dir="1">↓</button><button class="secondary" data-remove-question="'+i+'">Eliminar</button></div></div><label class="label">Pregunta formulada</label><textarea data-question="'+i+'" data-col="texto">'+esc(q.texto||"")+'</textarea><label class="choice"><input type="checkbox" data-question="'+i+'" data-col="clave" '+(q.clave?"checked":"")+'> Marcar como pregunta clave</label></div>'}).join("")+'<button class="btn" data-add-question>+ Añadir pregunta</button>';}
-if(stage===9){s+='<p>Preguntas marcadas como fundamentales: <strong>'+d.preguntas.filter(function(q){return q.clave}).length+'</strong>. La tarea requiere justificar tres o cuatro.</p>'+d.preguntas.filter(function(q){return q.clave}).map(function(q,i){return '<div class="mini"><b>'+esc(q.texto||"Pregunta por formular")+'</b><label class="label">Justificación de su utilidad para la investigación</label><textarea data-keyq="'+d.preguntas.indexOf(q)+'">'+esc(q.justificacion||"")+'</textarea></div>'}).join("");s+=field("integracion","Coherencia entre pregunta, método, evidencia, análisis y entrevistas");s+=field("pendientes","¿Qué falta verificar antes de entregar?");}
-s+='<div class="row between" style="margin-top:18px"><button class="secondary" data-prev '+(stage===0?"disabled":"")+'>← Anterior</button><span class="hint">Se guarda automáticamente en este dispositivo</span><button class="btn" data-next>'+ (stage===9?"Revisar entrega →":"Siguiente →")+'</button></div></div><div class="sticky-card"><div class="card"><h3>¿Qué debes poder defender?</h3><p>'+esc(STEPS[stage][1])+'</p><div class="warn">Seleccionar una categoría no justifica un método. Explica siempre cómo responde tu elección a la pregunta.</div></div><div class="card"><h3>Fundamento</h3><p class="hint">Creswell (2014), Eisenhardt (1989), Jick (1979) y Baxter y Eyles (1997) se citan en la presentación del curso. Verifica cuáles lecturas son obligatorias.</p></div></div></div>';
-return s;}
-function teacher(){return '<div class="card"><h3>Gestión local de grupos e integrantes</h3><p>La lista pública contiene solamente número y tema. Puedes importar el archivo privado de integrantes, editar los datos y crear grupos nuevos. Nada se envía a GitHub automáticamente.</p><div class="warn">Este panel no requiere contraseña porque sus cambios son locales. No subas el archivo privado a un repositorio público.</div><label class="label">Importar la lista privada de integrantes (JSON)</label><input type="file" id="import-roster" accept=".json,application/json"><div class="row" style="margin-top:15px"><button class="btn" data-new-group>+ Nuevo grupo</button><button class="secondary" data-save-roster>Descargar lista privada</button><button class="secondary" data-public-roster>Descargar lista pública</button></div></div><div class="card"><h3>Editar los grupos</h3>'+groups.map(function(g,i){return '<div class="mini"><b>Grupo '+g.id+'</b><div class="two"><div><label class="label">Tema</label><input data-edit-group="'+i+'" data-col="tema" value="'+esc(g.tema)+'"></div><div><label class="label">Integrantes (privados)</label><input data-edit-group="'+i+'" data-col="integrantes" value="'+esc(g.integrantes||"")+'"></div></div><label class="label">Pregunta provisional (editable)</label><textarea data-edit-group="'+i+'" data-col="pregunta_sugerida">'+esc(g.pregunta_sugerida||"")+'</textarea></div>'}).join("")+'</div>'}
-function md(){var g=chosen(),f=d.campos,out="# CM05 · Tarea 5 — Grupo "+gid+"\n\nTema: "+g.tema+"\n\n";out+="## 1. Diseño metodológico (50%)\n";["pregunta","caso","territorio","periodo","proposito","justificar_enfoque","justificar_diseno","fuentes","procedimiento","analisis","ventajas","limitaciones","bibliografia","calidad_medidas","exploratorias","etica"].forEach(function(k){out+="\n### "+k.replace(/_/g," ")+"\n"+(f[k]||"Pendiente")+"\n"});out+="\nEnfoques y categorías: "+JSON.stringify(d.opciones)+"\n\n## 2. Expertos (25%) — documento privado\n";d.expertos.forEach(function(e,i){out+="\nExperto "+(i+1)+": "+JSON.stringify(e)+"\n"});out+="\n## 3. Hilo conductor (25%)\n";d.preguntas.forEach(function(q,i){out+="\n"+(i+1)+". "+(q.texto||"Pendiente")+(q.clave?" [clave]":"")+"\nJustificación: "+(q.justificacion||"Pendiente")+"\n"});out+="\n## Integración\n"+(f.integracion||"Pendiente")+"\n";return out}
-function download(filename,s,type){var url=URL.createObjectURL(new Blob([s],{type:type||"text/plain;charset=utf-8"})),a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url)},2000)}
-function exportView(){return '<div class="card"><h3>Revisar y exportar el trabajo</h3><p class="hint">Grupo '+gid+' · '+esc(chosen().tema)+'</p><p>Estaciones con información: <span class="pct">'+counter()+' / 10</span></p><progress value="'+counter()+'" max="10"></progress><p>Este indicador refleja campos diligenciados, no calidad científica ni nota académica.</p><div class="row"><button class="btn" data-export-md>Descargar borrador (.md)</button><button class="secondary" data-export-json>Guardar respaldo editable (.json)</button><label class="secondary" style="cursor:pointer">Importar respaldo <input style="display:none" type="file" id="import-work" accept=".json"></label></div><div class="warn">La descarga NO es la entrega oficial. Los datos de expertos y estudiantes deben mantenerse en archivos privados. El sitio aún no tiene sincronización en tiempo real.</div></div>'}
-function render(){nav();var root=document.getElementById("root");root.innerHTML=view==="home"?home():view==="teacher"?teacher():!chosen()?'<div class="card">Primero selecciona un grupo.</div>':view==="work"?wstage():exportView();}
-document.addEventListener("click",function(ev){var t=ev.target,el;
-if((el=t.closest("[data-view]"))){view=el.dataset.view;if((view==="work"||view==="export")&&!chosen())view="home";render();return;}
-if((el=t.closest("[data-group]"))){gid=Number(el.dataset.group);localStorage.setItem("cm05_current_group",gid);d=work();stage=0;view="work";render();return;}
-if((el=t.closest("[data-step]"))){stage=Number(el.dataset.step);render();return;}
-if(t.closest("[data-prev]")){stage=Math.max(stage-1,0);render();return;}
-if(t.closest("[data-next]")){if(stage===9){view="export"}else{stage++}render();return;}
-if((el=t.closest("[data-add]"))){var k=el.dataset.add,v=(document.getElementById("new_"+k).value||"").trim();if(!v)return notice("Escribe primero una categoría.");if(!catalog[k].some(function(a){return a.toLowerCase()===v.toLowerCase()}))catalog[k].push(v);localStorage.setItem("cm05_catalog",JSON.stringify(catalog));d.opciones[k]=d.opciones[k]||[];if(!d.opciones[k].includes(v))d.opciones[k].push(v);save();render();return;}
-if(t.closest("[data-add-expert]")){d.expertos.push({});save();render();return;}
-if((el=t.closest("[data-remove-expert]"))){d.expertos.splice(Number(el.dataset.removeExpert),1);save();render();return;}
-if(t.closest("[data-add-question]")){d.preguntas.push({texto:"",clave:false,justificacion:""});save();render();return;}
-if((el=t.closest("[data-remove-question]"))){d.preguntas.splice(Number(el.dataset.removeQuestion),1);save();render();return;}
-if((el=t.closest("[data-move]"))){var i=Number(el.dataset.move),j=i+Number(el.dataset.dir);if(j>=0&&j<d.preguntas.length){var q=d.preguntas.splice(i,1)[0];d.preguntas.splice(j,0,q);save();render()}return;}
-if(t.closest("[data-new-group]")){groups.push({id:Math.max.apply(null,groups.map(function(g){return g.id}))+1,tema:"Tema pendiente de definir",integrantes:"",pregunta_sugerida:""});storeGroups();render();return;}
-if(t.closest("[data-save-roster]")){download("CM05_grupos_PRIVADO.json",JSON.stringify(groups,null,2),"application/json");return;}
-if(t.closest("[data-public-roster]")){download("CM05_grupos_PUBLICO.json",JSON.stringify(groups.map(function(g){return {id:g.id,tema:g.tema,integrantes:"",pregunta_sugerida:g.pregunta_sugerida||""}}),null,2),"application/json");return;}
-if(t.closest("[data-export-json]")){download("CM05_grupo_"+gid+"_respaldo_PRIVADO.json",JSON.stringify({group_id:gid,draft:d},null,2),"application/json");return;}
-if(t.closest("[data-export-md]")){download("CM05_grupo_"+gid+"_tarea5_PRIVADA.md",md(),"text/markdown;charset=utf-8");return;}
-});
-document.addEventListener("input",function(ev){var t=ev.target,k;
-if((k=t.dataset.field)){d.campos[k]=t.value;save();}
-if(t.dataset.expert!==undefined){d.expertos[Number(t.dataset.expert)][t.dataset.col]=t.value;save();}
-if(t.dataset.question!==undefined&&t.dataset.col==="texto"){d.preguntas[Number(t.dataset.question)].texto=t.value;save();}
-if(t.dataset.keyq!==undefined){d.preguntas[Number(t.dataset.keyq)].justificacion=t.value;save();}
-if(t.dataset.editGroup!==undefined){groups[Number(t.dataset.editGroup)][t.dataset.col]=t.value;storeGroups();}
-});
-document.addEventListener("change",function(ev){var t=ev.target;
-if(t.dataset.category){var k=t.dataset.category,v=t.dataset.value;d.opciones[k]=d.opciones[k]||[];d.opciones[k]=d.opciones[k].filter(function(a){return a!==v});if(t.checked)d.opciones[k].push(v);save();}
-if(t.dataset.question!==undefined&&t.dataset.col==="clave"){d.preguntas[Number(t.dataset.question)].clave=t.checked;save();}
-if(t.id==="import-roster"||t.id==="import-work"){var file=t.files&&t.files[0],reader=new FileReader();if(!file)return;reader.onload=function(){try{var obj=JSON.parse(reader.result);if(t.id==="import-roster"){if(!Array.isArray(obj)||!obj.every(function(g){return g.id&&typeof g.tema==="string"}))throw Error("Formato de grupos inválido");groups=obj;storeGroups();notice("Lista privada cargada en este navegador.");}else{if(!obj.draft||obj.group_id!==gid)throw Error("El respaldo no corresponde al grupo");d=obj.draft;save();notice("Borrador restaurado.");}render();}catch(e){notice("No se importó: "+e.message)}};reader.readAsText(file);}
-});
+function esc(x){return String(x==null?"":x).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;")}
+function $id(id){return document.getElementById(id)}
+function message(t){var n=$id("notice");n.textContent=t;n.style.display="block";clearTimeout(message.timer);message.timer=setTimeout(function(){n.style.display="none"},4500)}
+function fieldValue(k){return A[k]!==undefined?A[k]:""}
+function setV(k,v){A[k]=v;pending[k]=v;clearTimeout(timers[k]);timers[k]=setTimeout(function(){commit(k)},650);var t=$id("save-status");if(t)t.textContent="Guardando..."}
+function flattenAns(rows){var d={};rows.forEach(function(r){d[r.field_key]=r.body&&r.body.value!==undefined?r.body.value:""});return d}
+async function commit(k){
+if(!sb||!myGroup||pending[k]===undefined)return;
+var val=pending[k];delete pending[k];
+var r=await sb.from("cm05_answers").upsert({group_id:myGroup.id,field_key:k,body:{value:val},updated_at:new Date().toISOString(),updated_by:user.id},{onConflict:"group_id,field_key"});
+if(r.error){pending[k]=val;message("No se pudo guardar: "+r.error.message);return}
+var badge=$id("save-status");if(badge)badge.textContent="Guardado ✓";
+}
+async function flush(){Object.keys(timers).forEach(function(k){clearTimeout(timers[k])});await Promise.all(Object.keys(pending).map(commit))}
+function download(name,body,mime){var blob=new Blob([body],{type:mime||"text/plain;charset=utf-8"});var url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url)},2500)}
+function textDraft(g,obj){
+var out="CM05 · Seminario de Investigación · Tarea 5\nGrupo "+g.id+"\nTema: "+g.tema+"\nIntegrantes: "+g.integrantes+"\n\n";
+steps.forEach(function(s,i){out+="\n"+(i+1)+". "+s.title.toUpperCase()+"\n";(s.cats||[]).forEach(function(k){out+=k+": "+String(obj["c_"+k]||"Pendiente")+"\n";out+="Otra opción: "+String(obj["other_"+k]||"")+"\n"});(s.fields||[]).forEach(function(f){out+="\n"+f[1]+"\n"+String(obj[f[0]]||"Pendiente")+"\n"});
+if(s.experts){var n=Number(obj.expert_count||0);for(var j=1;j<=n;j++){out+="\nEXPERTO "+j+"\n";["nombre","email","telefono","organizacion","funcion","web","justificacion"].forEach(function(k){out+=k+": "+String(obj["exp_"+j+"_"+k]||"")+"\n"})}}
+if(s.questions||s.justifications){var n2=Number(obj.question_count||0);for(var q=1;q<=n2;q++){out+="\nPregunta "+q+": "+String(obj["q_"+q]||"");if(obj["qclave_"+q])out+=" [CLAVE]";out+="\n";if(s.justifications)out+="Justificación: "+String(obj["qwhy_"+q]||"")+"\n"}}});
+out+="\nFecha de entrega: 15.11.2026\n";
+return out;
+}
+function nav(){
+var nav=$id("nav");
+if(!ready){nav.innerHTML="<button class='active'>Presentación</button>";return}
+if(!user){nav.innerHTML="<button class='active'>Acceso</button>";return}
+nav.innerHTML=teacher?
+'<button data-tab="dashboard" class="'+(tab==="dashboard"?"active":"")+'">Vista del curso</button><button data-tab="teacher" class="'+(tab==="teacher"?"active":"")+'">Administrar grupos</button><button data-tab="work" class="'+(tab==="work"?"active":"")+'">Revisar proyecto</button><button data-tab="export" class="'+(tab==="export"?"active":"")+'">Archivo maestro</button><button data-out>Salir</button>':
+'<button data-tab="work" class="'+(tab==="work"?"active":"")+'">Mi investigación</button><button data-tab="export" class="'+(tab==="export"?"active":"")+'">Descargar TXT</button><button data-out>Cerrar sesión</button>';
+}
+function preconfig(){
+var s='<div class="card"><span class="badge">PREPARADO · FALTA CONECTAR</span><h3>Tu laboratorio ya está publicado, pero aún no recibe respuestas colectivas.</h3><p>Para permitir edición simultánea y permisos por grupo, el profesor debe conectar una base de datos Supabase siguiendo <strong>SUPABASE_SETUP.sql</strong>. Hasta entonces, esta pantalla no solicita ni almacena datos de estudiantes.</p><div class="warn">No introduzcas respuestas ni contactos personales en una versión sin autenticación.</div></div>';
+s+='<div class="card"><h3>Los 16 temas iniciales</h3><div class="grid">'+oldTopics.map(function(v,i){return "<div class='mini'><span class='tag'>GRUPO "+(i+1)+"</span><strong style='display:block'>"+esc(v)+"</strong></div>"}).join("")+'</div></div>';
+s+='<div class="card"><h3>Ruta metodológica</h3>'+steps.map(function(v,i){return "<div class='mini'><b>"+(i+1)+". "+esc(v.title)+"</b><p class='hint'>"+esc(v.intro)+"</p></div>"}).join("")+'</div>';
+return s;
+}
+function login(){return '<div class="card"><span class="badge">ACCESO PERSONAL</span><h3>Entra a tu espacio de investigación</h3><p>Accede con el correo que el profesor haya registrado para tu grupo. Recibirás un enlace de ingreso; no necesitas cuenta de GitHub ni subir archivos.</p><label class="label">Correo electrónico autorizado</label><input type="email" id="email" placeholder="correo@universidad.edu"><div style="margin-top:12px"><button class="btn" data-login>Enviar enlace de acceso</button></div><p class="hint">Tus respuestas solo serán editables por integrantes autorizados de tu grupo. El profesor podrá revisar todos los trabajos.</p></div>'}
+function awaiting(){return '<div class="card"><h3>El correo aún no está asignado a un grupo</h3><p>Has ingresado como <b>'+esc(user.email)+'</b>, pero este correo no figura en la lista del profesor. Solicita que te asigne al grupo correspondiente.</p><button class="secondary" data-out>Cerrar sesión</button></div>'}
+function progress(id){var rs=allAnswers.filter(function(a){return a.group_id===id}),keys=new Set(rs.map(function(x){return x.field_key}));return steps.filter(function(s){return (s.fields||[]).some(function(f){return keys.has(f[0])})||(s.cats||[]).some(function(k){return keys.has("c_"+k)})||(s.experts&&keys.has("expert_count"))||(s.questions&&keys.has("question_count"))||(s.justifications&&keys.has("integracion"))}).length}
+function dashboard(){return '<div class="card"><div class="row between"><h3>Progreso de la clase en tiempo real</h3><span class="badge">'+groups.length+' grupos</span></div><p>Selecciona un grupo para revisar sus avances y proyectar sus argumentos. Los estudiantes no pueden editar proyectos ajenos.</p><div class="grid">'+groups.map(function(g){return '<button class="group-card" data-select="'+g.id+'"><span class="tag">GRUPO '+g.id+'</span><strong>'+esc(g.tema)+'</strong><small>'+esc(g.integrantes||"Integrantes pendientes")+'</small><progress value="'+progress(g.id)+'" max="10"></progress><small>'+progress(g.id)+' / 10 estaciones con actividad</small></button>'}).join("")+'</div></div>'}
+function cat(k){var sel=fieldValue("c_"+k)||[],custom=fieldValue("other_"+k)||"";if(!Array.isArray(sel))sel=[];var vals=categories[k].concat(custom.split("\n").map(function(a){return a.trim()}).filter(function(a){return a&&!categories[k].includes(a)}));return '<div class="mini"><strong>'+esc(k.charAt(0).toUpperCase()+k.slice(1))+'</strong><div class="choices">'+vals.map(function(v){return '<label class="choice"><input type="checkbox" data-choice="'+k+'" data-option="'+esc(v)+'" '+(sel.includes(v)?"checked":"")+'> '+esc(v)+'</label>'}).join("")+'</div><label class="label">Añadir otras categorías (una por línea)</label><textarea data-field="other_'+k+'" placeholder="Otras opciones justificadas...">'+esc(custom)+'</textarea></div>'}
+function inputField(k,label){return '<label class="label">'+esc(label)+'</label><textarea data-field="'+esc(k)+'" placeholder="Escribe y justifica tu respuesta...">'+esc(fieldValue(k))+'</textarea>'}
+function directory(){var n=Number(fieldValue("expert_count")||0),s='<p class="hint">No se permiten archivos adjuntos; escribe únicamente los datos pertinentes para tu proyecto.</p>';for(var i=1;i<=n;i++){s+='<div class="mini"><b>Experto '+i+'</b>';["nombre","email","telefono","organizacion","funcion","web","justificacion"].forEach(function(k){s+=inputField("exp_"+i+"_"+k,k.charAt(0).toUpperCase()+k.slice(1))});s+='</div>'}return s+'<button class="secondary" data-add-expert>+ Añadir experto</button>'}
+function questions(just){var n=Number(fieldValue("question_count")||0),s='';for(var i=1;i<=n;i++){s+='<div class="mini"><b>Pregunta '+i+'</b>'+inputField("q_"+i,"Pregunta abierta")+'<label class="choice"><input type="checkbox" data-keyquestion="'+i+'" '+(fieldValue("qclave_"+i)?"checked":"")+'> Pregunta fundamental</label>'+(just?inputField("qwhy_"+i,"¿Cómo ayuda a responder tu pregunta o a aprender del contexto?"):"")+'</div>'}return s+(!just?'<button class="secondary" data-add-question>+ Añadir pregunta</button>':"")}
+function editor(){
+if(!myGroup)return '<div class="card">Selecciona un grupo.</div>';
+var s=steps[step],val=Object.keys(A).filter(function(k){return !!A[k]}).length;
+return '<div class="card"><div class="row between"><h3>Grupo '+myGroup.id+' · '+esc(myGroup.tema)+'</h3><span class="badge" id="save-status">Conectado · Guardado automático</span></div><p class="hint">'+esc(myGroup.integrantes||"Integrantes por registrar")+'</p><div class="steps">'+steps.map(function(x,i){return '<button data-step="'+i+'" class="'+(i===step?"active":"")+'">'+(i+1)+'</button>'}).join("")+'</div></div><div class="card"><span class="badge">ESTACIÓN '+(step+1)+' / 10</span><h3 style="margin-top:10px">'+esc(s.title)+'</h3><p class="muted">'+esc(s.intro)+'</p>'+(s.cats||[]).map(cat).join("")+(s.fields||[]).map(function(f){return inputField(f[0],f[1])}).join("")+(s.experts?directory():"")+(s.questions?questions(false):"")+(s.justifications?questions(true):"")+'<div class="row between" style="margin-top:20px"><button class="secondary" data-prev '+(step===0?"disabled":"")+'>← Anterior</button><span class="hint">Las modificaciones se sincronizan por campo.</span><button class="btn" data-next>'+ (step===9?"Descargar →":"Siguiente →")+'</button></div></div><div class="card"><h3>¿Cómo se evalúa esta tarea?</h3><p>Justificación del método: <b>50%</b>. Directorio de expertos: <b>25%</b>. Hilo conductor de preguntas: <b>25%</b>.</p><p class="hint">El estudio de caso es el diseño solicitado en CM05. La metodología debe justificarse con bibliografía del curso.</p></div>'}
+function downloadPage(){return '<div class="card"><h3>Descargar mi trabajo como texto</h3><p>Puedes llevarte todo lo que hayas escrito en un solo archivo TXT. No necesitas subir documentos ni entrar a GitHub.</p><button class="btn" data-student-export>Descargar mi TXT</button><div class="warn">El archivo contiene información personal que hayas escrito sobre expertos. Consérvalo en privado.</div></div>'}
+function teacherPanel(){
+var opts=groups.map(function(g){return '<option value="'+g.id+'">'+g.id+' · '+esc(g.tema)+'</option>'}).join("");
+return '<div class="card"><h3>Administrar grupos y permisos</h3><p>Los estudiantes entran únicamente con correos autorizados. Solo tú puedes asignar grupos, editar sus integrantes y añadir equipos.</p><div class="two"><div><label class="label">Nuevo grupo · tema</label><input id="new-topic" placeholder="Título provisional"><button class="secondary" data-add-group style="margin-top:8px">Crear grupo</button></div><div><label class="label">Cargar los 16 temas iniciales</label><p class="hint">Solo si el registro está vacío.</p><button class="secondary" data-seed>Crear temas iniciales</button></div></div></div>'+
+'<div class="card"><h3>Asignar un correo a un grupo</h3><p class="hint">La persona deberá verificar su correo al entrar. No requiere acceso al repositorio.</p><div class="two"><div><label class="label">Correo autorizado</label><input id="add-email" type="email" placeholder="estudiante@universidad.edu"></div><div><label class="label">Grupo asignado</label><select id="add-member-group">'+opts+'</select></div></div><button class="btn" data-add-member style="margin-top:12px">Guardar asignación</button><div class="mini">'+allMembers.filter(function(m){return !m.teacher}).map(function(m){return '<div class="row between"><small>'+esc(m.email)+' · grupo '+esc(m.group_id)+'</small><button class="secondary" data-remove-member="'+esc(m.email)+'">Revocar</button></div>'}).join("")+'</div></div>'+
+'<div class="card"><h3>Grupos e integrantes</h3>'+groups.map(function(g){return '<div class="mini"><b>Grupo '+g.id+'</b><label class="label">Tema</label><input data-group-field="tema" data-groupid="'+g.id+'" value="'+esc(g.tema)+'"><label class="label">Integrantes</label><input data-group-field="integrantes" data-groupid="'+g.id+'" value="'+esc(g.integrantes||"")+'"><label class="label">Pregunta provisional</label><textarea data-group-field="pregunta_sugerida" data-groupid="'+g.id+'">'+esc(g.pregunta_sugerida||"")+'</textarea><button class="secondary" data-update-group="'+g.id+'">Guardar grupo</button></div>'}).join("")+'</div>'+
+'<div class="card"><h3>Importar datos por copia de texto (solo profesor)</h3><p class="hint">Pega el contenido JSON de la lista privada que ya tienes. No se solicita subir un archivo.</p><textarea id="paste-roster" placeholder="Pega aquí [{&quot;id&quot;:1,&quot;tema&quot;:&quot;...&quot;,&quot;integrantes&quot;:&quot;...&quot;}, ...]"></textarea><button class="secondary" data-paste-roster>Guardar lista privada en la base de datos</button></div>';
+}
+function quoteCSV(x){return '"'+String(x===undefined||x===null?"":typeof x==="object"?JSON.stringify(x):x).replace(/"/g,'""')+'"'}
+function csvMaster(){
+var keys=Array.from(new Set(allAnswers.map(function(a){return a.field_key}))).sort(),
+head=["grupo","tema","integrantes","pregunta_provisional"].concat(keys);
+var rows=[head.map(quoteCSV).join(",")];
+groups.forEach(function(g){var ob=flattenAns(allAnswers.filter(function(a){return a.group_id===g.id}));rows.push([g.id,g.tema,g.integrantes,g.pregunta_sugerida].concat(keys.map(function(k){return ob[k]||""})).map(quoteCSV).join(","))});
+return "\ufeff"+rows.join("\r\n");
+}
+function exportMaster(){return '<div class="card"><h3>Tu archivo maestro del curso</h3><p>Todas las respuestas están registradas centralmente. Descarga un solo CSV compatible con Excel: contiene una fila por grupo, sus integrantes, temas y todos los campos de su tarea, incluidos los contactos de expertos.</p><button class="btn" data-master>Descargar archivo maestro CM05.csv</button><p class="hint">El archivo maestro es privado y solo el usuario docente autorizado puede generarlo. Los estudiantes pueden descargar únicamente su TXT.</p></div>'}
+function render(){
+nav();var root=$id("root");
+if(!ready||!sb){root.innerHTML=preconfig();return}
+if(!user){root.innerHTML=login();return}
+if(!membership){root.innerHTML=awaiting();return}
+root.innerHTML=tab==="dashboard"&&teacher?dashboard():tab==="teacher"&&teacher?teacherPanel():tab==="export"?(teacher?exportMaster():downloadPage()):editor();
+}
+async function getData(){
+if(!sb||!membership)return;
+if(teacher){var results=await Promise.all([sb.from("cm05_groups").select("*").order("id"),sb.from("cm05_answers").select("*"),sb.from("cm05_members").select("*")]);if(results.some(function(x){return x.error})){message(results.filter(function(x){return x.error}).map(function(x){return x.error.message}).join(" | "));return}
+groups=results[0].data||[];allAnswers=results[1].data||[];allMembers=results[2].data||[];
+if(myGroup){var match=groups.find(function(g){return g.id===myGroup.id});if(match)myGroup=match}
+}else{var id=membership.group_id;var a=await Promise.all([sb.from("cm05_groups").select("*").eq("id",id).maybeSingle(),sb.from("cm05_answers").select("*").eq("group_id",id)]);
+if(a[0].error||a[1].error){message("Error de lectura de datos. Comprueba permisos del grupo.");return}
+myGroup=a[0].data;groups=myGroup?[myGroup]:[];allAnswers=a[1].data||[]}
+if(myGroup){A=flattenAns(allAnswers.filter(function(x){return x.group_id===myGroup.id}))}
+}
+function subscribe(){
+if(!sb)return;
+if(channel)sb.removeChannel(channel);
+channel=sb.channel("cm05-live-"+(teacher?"teacher":membership.group_id))
+.on("postgres_changes",{event:"*",schema:"public",table:"cm05_answers"},function(payload){
+var row=payload.new;if(!row)return;
+if(!teacher&&row.group_id!==membership.group_id)return;
+var ix=allAnswers.findIndex(function(x){return x.group_id===row.group_id&&x.field_key===row.field_key});
+if(ix>=0)allAnswers[ix]=row;else allAnswers.push(row);
+if(myGroup&&row.group_id===myGroup.id&&!pending[row.field_key]){
+A[row.field_key]=row.body&&row.body.value!==undefined?row.body.value:"";
+var input=document.querySelector('[data-field="'+row.field_key+'"]');
+if(input&&document.activeElement!==input)input.value=String(A[row.field_key]);}
+if(teacher&&tab==="dashboard")render();
+}).subscribe();
+}
+async function initialize(){
+if(!sb){render();return}
+var rs=await sb.auth.getSession();user=rs.data.session?rs.data.session.user:null;
+if(user){var m=await sb.from("cm05_members").select("email,group_id,teacher").eq("email",user.email.toLowerCase()).maybeSingle();
+membership=m.error?null:m.data;teacher=!!(membership&&membership.teacher);
+if(membership){tab=teacher?"dashboard":"work";await getData();subscribe()}}
 render();
+sb.auth.onAuthStateChange(function(event,session){var next=session?session.user:null;if((next&&(!user||next.id!==user.id))||(!next&&user)){user=next;membership=null;teacher=false;myGroup=null;groups=[];allAnswers=[];allMembers=[];A={};setTimeout(initialize,10)}});
+}
+document.addEventListener("click",async function(e){
+var t=e.target,b=t.closest("button");if(!b)return;
+if(b.dataset.tab){await flush();tab=b.dataset.tab;render();return}
+if(b.hasAttribute("data-out")){await flush();await sb.auth.signOut();user=null;membership=null;teacher=false;myGroup=null;render();return}
+if(b.hasAttribute("data-login")){var email=$id("email").value.trim().toLowerCase();if(!email||!email.includes("@"))return message("Introduce un correo válido.");var r=await sb.auth.signInWithOtp({email:email,options:{emailRedirectTo:location.origin+location.pathname}});message(r.error?("No se envió: "+r.error.message):"Revisa tu correo para ingresar al laboratorio.");return}
+if(b.dataset.step!==undefined){await flush();step=Number(b.dataset.step);render();return}
+if(b.hasAttribute("data-prev")){await flush();step=Math.max(0,step-1);render();return}
+if(b.hasAttribute("data-next")){await flush();if(step===9)tab="export";else step++;render();return}
+if(b.dataset.select){await flush();myGroup=groups.find(function(g){return g.id===Number(b.dataset.select)});A=flattenAns(allAnswers.filter(function(x){return x.group_id===myGroup.id}));step=0;tab="work";render();return}
+if(b.hasAttribute("data-add-expert")){setV("expert_count",Number(fieldValue("expert_count")||0)+1);await flush();render();return}
+if(b.hasAttribute("data-add-question")){setV("question_count",Number(fieldValue("question_count")||0)+1);await flush();render();return}
+if(b.hasAttribute("data-student-export")){await flush();download("CM05_grupo_"+myGroup.id+"_Tarea5.txt",textDraft(myGroup,A));return}
+if(b.hasAttribute("data-master")){if(!teacher)return;await getData();download("CM05_2026_ARCHIVO_MAESTRO.csv",csvMaster(),"text/csv;charset=utf-8");return}
+if(b.hasAttribute("data-seed")){if(!teacher||groups.length)return message("Solo puedes inicializar una base vacía.");var rs=await sb.from("cm05_groups").insert(oldTopics.map(function(tema,i){return {id:i+1,tema:tema}}));if(rs.error)message(rs.error.message);else{await getData();render();message("Se crearon 16 grupos iniciales.")}return}
+if(b.hasAttribute("data-add-group")){if(!teacher)return;var name=$id("new-topic").value.trim()||"Tema pendiente de definir",id=Math.max(0,...groups.map(function(g){return g.id}))+1;var r=await sb.from("cm05_groups").insert({id:id,tema:name});if(r.error)message(r.error.message);else{await getData();render();message("Grupo creado")};return}
+if(b.hasAttribute("data-add-member")){if(!teacher)return;var email=$id("add-email").value.trim().toLowerCase(),group_id=Number($id("add-member-group").value);if(!email.includes("@")||!group_id)return message("Correo y grupo requeridos.");var r=await sb.from("cm05_members").upsert({email:email,group_id:group_id,teacher:false},{onConflict:"email"});if(r.error)message(r.error.message);else{await getData();render();message("Acceso asignado")};return}
+if(b.dataset.removeMember){if(!teacher)return;var r=await sb.from("cm05_members").delete().eq("email",b.dataset.removeMember).eq("teacher",false);if(r.error)message(r.error.message);else{await getData();render()};return}
+if(b.dataset.updateGroup){if(!teacher)return;var id=Number(b.dataset.updateGroup),p={};document.querySelectorAll('[data-groupid="'+id+'"]').forEach(function(x){p[x.dataset.groupField]=x.value});var r=await sb.from("cm05_groups").update(p).eq("id",id);if(r.error)message(r.error.message);else{await getData();render();message("Grupo actualizado")};return}
+if(b.hasAttribute("data-paste-roster")){if(!teacher)return;try{var list=JSON.parse($id("paste-roster").value);if(!Array.isArray(list)||!list.every(function(x){return Number.isInteger(x.id)&&typeof x.tema==="string"}))throw Error("Se espera una lista de grupos");var r=await sb.from("cm05_groups").upsert(list.map(function(g){return {id:g.id,tema:g.tema,integrantes:g.integrantes||"",pregunta_sugerida:g.pregunta_sugerida||""}}),{onConflict:"id"});if(r.error)throw Error(r.error.message);await getData();render();message("Lista privada guardada")}catch(ex){message("Error de datos: "+ex.message)}return}
+});
+document.addEventListener("input",function(e){var x=e.target;if(x.dataset.field){setV(x.dataset.field,x.value)}});
+document.addEventListener("change",function(e){
+var x=e.target;
+if(x.dataset.choice){var k="c_"+x.dataset.choice,vals=fieldValue(k);if(!Array.isArray(vals))vals=[];vals=vals.filter(function(v){return v!==x.dataset.option});if(x.checked)vals.push(x.dataset.option);setV(k,vals)}
+if(x.dataset.keyquestion){setV("qclave_"+x.dataset.keyquestion,Boolean(x.checked))}
+});
+render();initialize();
 })();
 </script></body></html>
