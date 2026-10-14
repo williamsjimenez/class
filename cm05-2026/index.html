@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CM05 2026 · Laboratorio de Diseño Metodológico</title>
+<meta name="description" content="Laboratorio guiado de metodologías y Tarea 5 del Seminario CM05">
+<style>
+:root{--ink:#213a3d;--muted:#657b80;--teal:#176d70;--mint:#e8f4f0;--line:#dbe8e6;--paper:#f6f9f8;--gold:#ba803c}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);font:15px/1.5 system-ui,-apple-system,Segoe UI,Arial,sans-serif;color:var(--ink)}
+header{background:#163e43;color:#fff;padding:16px max(20px,calc((100vw - 1280px)/2));display:flex;justify-content:space-between;align-items:center;gap:18px}
+header h1{font-size:20px;margin:0}header p{margin:2px 0 0;color:#c7dbdc;font-size:12px}.toplink{color:white;text-decoration:none;border:1px solid #8aadae;border-radius:8px;padding:8px 12px;font-size:12px}
+.shell{max-width:1300px;margin:24px auto;padding:0 18px;display:grid;grid-template-columns:240px minmax(0,1fr);gap:20px}
+aside{background:#fff;border:1px solid var(--line);border-radius:16px;padding:17px;align-self:start;position:sticky;top:16px}
+aside h2{margin:0 0 10px;font-size:14px;color:#6c7e82;text-transform:uppercase;letter-spacing:.07em}
+nav button{display:block;background:none;width:100%;text-align:left;color:var(--ink);border:0;border-radius:9px;padding:10px;margin:2px 0;cursor:pointer;font:inherit;font-size:13px}
+nav button:hover,nav button.active{background:var(--mint);color:#0b5759;font-weight:700}
+main{min-width:0}.hero{background:linear-gradient(120deg,#dfeee7,#f6f8f1);border-radius:18px;padding:28px 32px;margin-bottom:18px}
+.hero .eyebrow{font-size:11px;letter-spacing:.13em;color:var(--teal);font-weight:750}.hero h2{font-size:30px;line-height:1.18;margin:8px 0}.hero p{max-width:720px;margin:0;color:#3f6264}
+.card{background:#fff;border:1px solid var(--line);border-radius:15px;padding:20px;margin:0 0 15px;box-shadow:0 2px 12px #123e4608}
+.card h3{margin:0 0 10px;font-size:19px}.muted,.hint,small{color:var(--muted)}.hint{font-size:12px;margin:6px 0 12px}
+.badge{display:inline-block;background:var(--mint);color:#0d6867;border-radius:99px;padding:4px 10px;font-weight:700;font-size:11px}
+.label{display:block;font-size:12px;font-weight:750;margin:14px 0 5px;color:#34575a}
+input,select,textarea{width:100%;font:inherit;color:var(--ink);border:1px solid #c6d7d5;border-radius:9px;background:#fff;padding:10px 11px}
+textarea{min-height:88px;resize:vertical}textarea:focus,input:focus,select:focus{outline:2px solid #71b2b0;outline-offset:1px}
+button{font:inherit;cursor:pointer}.btn{border:0;border-radius:9px;background:var(--teal);color:white;padding:10px 15px;font-weight:700}.btn:hover{background:#0c5053}.secondary{border:1px solid #acc9c6;background:white;color:var(--teal);border-radius:9px;padding:9px 13px;font-weight:700}
+.warn{background:#fff7e8;border-left:3px solid var(--gold);padding:12px;border-radius:5px;font-size:13px;color:#745327;margin-top:12px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.between{justify-content:space-between}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(225px,1fr));gap:11px}
+.group-card{background:white;text-align:left;border:1px solid var(--line);border-radius:12px;padding:16px;min-height:115px;cursor:pointer;color:inherit}
+.group-card:hover{border-color:var(--teal);box-shadow:0 3px 14px #184d5422}.group-card strong{display:block;font-size:14px;margin:7px 0}.group-card small{display:block}
+progress{width:100%;height:10px;accent-color:var(--teal)}
+.steps{display:flex;gap:4px;flex-wrap:wrap;margin:14px 0}
+.steps button{border:1px solid #cfdedb;background:white;color:#567073;border-radius:8px;padding:7px 10px;font-size:12px}
+.steps button.active{background:var(--teal);color:white}.steps button.done{border-color:#77b5a9;color:#176d70}
+.panelgrid{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:15px}.sticky-card{position:sticky;top:15px;align-self:start}
+.choice{display:flex;align-items:center;gap:9px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;margin:5px 0;font-size:13px}
+.choice input{width:auto;margin:0}.choices{display:grid;grid-template-columns:1fr 1fr;gap:5px 10px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}.mini{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:13px;margin:10px 0}
+.pct{font-size:24px;font-weight:800;color:var(--teal)}.tag{color:#0a6563;font-size:12px;font-weight:bold}
+#notice{position:fixed;bottom:18px;right:18px;background:#144548;color:white;border-radius:10px;padding:12px 16px;display:none;max-width:350px;z-index:10}
+footer{text-align:center;color:#6f8487;font-size:12px;padding:22px}
+@media(max-width:880px){.shell{display:block}aside{position:static;margin-bottom:15px}nav{display:flex;flex-wrap:wrap;gap:4px}nav button{width:auto}.panelgrid{display:block}.sticky-card{position:static}.two,.choices{grid-template-columns:1fr}.hero h2{font-size:24px}}
+</style></head><body>
+<header><div><h1>CM05 · Laboratorio de Diseño Metodológico</h1><p>Seminario de Investigación · 2026 · La pregunta guía el método</p></div><a class="toplink" href="https://github.com/williamsjimenez/class/tree/main/cm05-2026" target="_blank" rel="noopener">Repositorio GitHub ↗</a></header>
+<div class="shell"><aside><h2>Navegación</h2><nav id="nav"></nav><div class="warn">Este portal guarda los avances en el navegador. Todavía no envía trabajos ni sincroniza grupos en tiempo real. Descarga respaldos al terminar.</div></aside>
+<main><section class="hero"><div class="eyebrow">APRENDER INVESTIGANDO</div><h2>De tu pregunta a un método defendible.</h2><p>Desarrolla tu propio diseño mediante decisiones sucesivas. Las categorías sirven para orientarte; puedes agregar las que necesites y justificar cada elección.</p></section>
+<div id="root"></div><footer>Tarea 5 · Trabajo en grupo · 1.500 palabras · 50% metodología, 25% expertos, 25% entrevista · 15.11.2026</footer></main></div><div id="notice" role="status"></div>
+<script>
+(function(){
+"use strict";
+var BASE=[
+[1,"Poblaciones de aves migratorias"],[2,"Rellenos sanitarios"],[3,"Marine protected areas in Chilean Patagonia"],
+[4,"Sustainable development"],[5,"Salmonicultura y desarrollo territorial en Chiloé"],
+[6,"Crecimiento regional y urbano"],[7,"Instalación de parques eólicos y turismo"],
+[8,"El libre acceso a los recursos comunes provoca sobreexplotación"],
+[9,"Conflictos socioambientales y el rol del turismo"],[10,"Desarrollo económico en clúster y gobierno local en Chile"],
+[11,"Consecuencias socioeconómicas y ambientales"],[12,"Extracción adoptada por los recolectores"],
+[13,"Expansión de la salmonicultura"],[14,"Salmonicultura y desarrollo territorial en Chiloé"],
+[15,"Tema pendiente de definir"],[16,"Tema pendiente de definir"]
+].map(function(x){return {id:x[0],tema:x[1],integrantes:"",pregunta_sugerida:""}});
+var CATALOG={
+enfoque:["Cualitativo","Cuantitativo","Mixto","Otro enfoque"],
+diseno:["Estudio de caso","Estudio comparativo","Etnografía","Fenomenología","Teoría fundamentada","Investigación-acción","Encuesta transversal","Estudio longitudinal","Diseño cuasiexperimental","Diseño experimental","Métodos mixtos convergentes","Métodos mixtos secuenciales"],
+tecnicas:["Entrevistas semiestructuradas","Entrevistas en profundidad","Grupos focales","Observación","Observación participante","Análisis documental","Análisis de prensa","Encuesta","Datos administrativos","Bases estadísticas secundarias","Datos espaciales","Archivos históricos","Material audiovisual"],
+muestreo:["Intencional por criterios","Muestreo teórico","Máxima variación","Bola de nieve","Conveniencia justificada","Aleatorio simple","Estratificado","Censal","Selección de casos críticos"],
+analisis:["Análisis temático","Análisis de contenido cualitativo","Análisis del discurso","Codificación fundamentada","Análisis de procesos","Comparación entre casos","Estadística descriptiva","Regresión","Series temporales","Análisis espacial","Integración de datos cualitativos y cuantitativos"],
+calidad:["Credibilidad","Transferibilidad","Dependencia","Confirmabilidad / verificabilidad","Triangulación de fuentes","Reflexividad","Registro de decisiones","Casos negativos","Validez de constructo","Validez interna","Fiabilidad de medición","Representatividad estadística","Prueba piloto"]
+};
+var STEPS=[
+["Pregunta de investigación","Delimita qué quieres saber, sobre qué caso, dónde y durante qué período."],
+["Elección del enfoque","Decide entre enfoques cualitativo, cuantitativo, mixto u otro y explica qué evidencia requiere tu pregunta."],
+["Diseño y métodos","Escoge el diseño de investigación y describe cómo se aplicará a tu caso."],
+["Fuentes y producción de datos","Selecciona técnicas, fuentes y participantes, y explica cómo obtendrás los datos."],
+["Análisis y justificación","Indica cómo analizarás la información. Argumenta ventajas y limitaciones con bibliografía."],
+["Calidad científica","Define criterios de calidad y acciones verificables para cumplirlos."],
+["Entrevistas exploratorias","Explica qué aprenderás de expertos y cómo podrían mejorar tu proyecto."],
+["Directorio de expertos","Identifica personas relevantes y justifica su selección. Conserva sus contactos en privado."],
+["Guion de entrevistas","Elabora y ordena preguntas abiertas, sin inducir respuestas."],
+["Integración y entrega","Justifica tres o cuatro preguntas clave y comprueba la coherencia del diseño completo."]
+];
+var groups=load("cm05_public_groups",BASE),catalog=load("cm05_catalog",CATALOG),gid=Number(localStorage.getItem("cm05_current_group")||0),stage=0,view="home";
+function load(k,otherwise){try{var v=JSON.parse(localStorage.getItem(k));return v||JSON.parse(JSON.stringify(otherwise))}catch(e){return JSON.parse(JSON.stringify(otherwise))}}
+function esc(v){return String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;")}
+function notice(s){var el=document.getElementById("notice");el.textContent=s;el.style.display="block";clearTimeout(notice.t);notice.t=setTimeout(function(){el.style.display="none"},3400)}
+function chosen(){return groups.find(function(g){return g.id===gid})}
+function initial(){return {campos:{},opciones:{},extras:{},expertos:[],preguntas:[],updated:null}}
+function work(){return load("cm05_work_"+gid,initial())}
+var d=gid?work():initial();
+function save(){if(!gid)return;d.updated=new Date().toISOString();localStorage.setItem("cm05_work_"+gid,JSON.stringify(d))}
+function storeGroups(){localStorage.setItem("cm05_public_groups",JSON.stringify(groups))}
+function field(k,name,placeholder){return '<label class="label" for="f_'+k+'">'+esc(name)+'</label><textarea id="f_'+k+'" data-field="'+k+'" placeholder="'+esc(placeholder||"Escribe una respuesta argumentada...")+'">'+esc(d.campos[k]||"")+'</textarea>'}
+function input(k,name){return '<label class="label" for="f_'+k+'">'+esc(name)+'</label><input id="f_'+k+'" data-field="'+k+'" value="'+esc(d.campos[k]||"")+'">'}
+function category(k,title,help){var values=catalog[k]||[],saved=d.opciones[k]||[];return '<div class="mini"><strong>'+esc(title)+'</strong><p class="hint">'+esc(help)+'</p><div class="choices">'+values.map(function(v){return '<label class="choice"><input type="checkbox" data-category="'+k+'" data-value="'+esc(v)+'" '+(saved.includes(v)?"checked":"")+'>'+esc(v)+'</label>'}).join("")+'</div><div class="row" style="margin-top:10px"><input style="flex:1;min-width:150px" id="new_'+k+'" placeholder="Agregar una categoría propia"><button class="secondary" data-add="'+k+'">+ Agregar</button></div></div>'}
+function counter(){return STEPS.filter(function(_,i){return hasStep(i)}).length}
+function hasStep(i){var f=d.campos;return Boolean([f.pregunta,f.proposito,(d.opciones.enfoque||[]).length,(d.opciones.diseno||[]).length,(d.opciones.tecnicas||[]).length,f.analisis,(d.opciones.calidad||[]).length,f.exploratorias,d.expertos.length,d.preguntas.length][i])}
+function nav(){var items=[["home","Grupos"],["work","Diseño metodológico"],["teacher","Editar grupos"],["export","Revisar / exportar"]];document.getElementById("nav").innerHTML=items.map(function(x){return '<button class="'+(view===x[0]?"active":"")+'" data-view="'+x[0]+'">'+esc(x[1])+'</button>'}).join("")}
+function home(){return '<div class="card"><div class="row between"><h3>Proyectos del seminario</h3><span class="badge">'+groups.length+' grupos</span></div><p class="hint">Los temas provienen de la matriz del curso. Los integrantes pueden cargarse privadamente desde el panel de edición; los nombres no están publicados en GitHub.</p><div class="grid">'+groups.map(function(g){return '<button class="group-card" data-group="'+g.id+'"><span class="tag">GRUPO '+String(g.id).padStart(2,"0")+'</span><strong>'+esc(g.tema)+'</strong><small>'+esc(g.integrantes||"Integrantes reservados · cargar en este navegador")+'</small></button>'}).join("")+'</div></div><div class="card"><h3>¿Qué vas a construir?</h3><p>Comenzarás por la pregunta y avanzarás hacia el enfoque, las técnicas, el análisis, la calidad, los expertos y el guion. Las decisiones pueden revisarse; la metodología no es una lista automática de casillas.</p></div>'}
+function wstage(){
+var g=chosen(),f=d.campos,s='<div class="card"><div class="row between"><h3>Grupo '+gid+' · '+esc(g.tema)+'</h3><span class="badge">'+(stage+1)+' / 10</span></div><p class="hint">'+esc(g.integrantes||"Integrantes pendientes de cargar")+" · Cambios guardados en este navegador</p><progress value='"+counter()+"' max='10'></progress><div class='steps'>"+STEPS.map(function(x,i){return '<button data-step="'+i+'" class="'+(stage===i?"active":hasStep(i)?"done":"")+'">'+(i+1)+'</button>'}).join("")+'</div></div>';
+s+='<div class="panelgrid"><div class="card"><span class="badge">PASO '+(stage+1)+'</span><h3 style="margin-top:12px">'+esc(STEPS[stage][0])+'</h3><p class="muted">'+esc(STEPS[stage][1])+'</p>';
+if(stage===0){s+=field("tema_ajustado","Título provisional","Precisa el tema y el fenómeno que estudiarás.");s+=field("problema","Problema de investigación","¿Qué no conocemos todavía?");s+=field("pregunta","Pregunta de investigación","¿Cómo, por qué, qué relación o cuánto?");s+=input("caso","Caso y unidad de análisis");s+=input("territorio","Territorio");s+=input("periodo","Período de estudio");}
+if(stage===1){s+=field("proposito","¿Qué necesitas conocer para responder tu pregunta?","Comprender procesos, estimar relaciones, contrastar explicaciones...");s+=category("enfoque","Enfoque metodológico","Elige el que mejor responda a la pregunta. Selecciona solo combinaciones coherentes.");s+=field("justificar_enfoque","¿Por qué este enfoque y no otro?","Relaciona la pregunta con la evidencia necesaria.");}
+if(stage===2){s+=category("diseno","Diseño de investigación","La Tarea 5 exige justificar el estudio de caso; el catálogo general permite explorar otros diseños.");s+=field("justificar_diseno","Justificación y delimitación del diseño","¿Por qué ese caso y cómo permite producir conocimiento?");}
+if(stage===3){s+=category("tecnicas","Técnicas de producción o recolección","Puedes combinar técnicas compatibles y explicar el aporte de cada una.");s+=category("muestreo","Selección de casos y participantes","No todos los diseños requieren muestreo probabilístico.");s+=field("fuentes","Fuentes concretas y acceso a la información");s+=field("procedimiento","Procedimientos de registro y obtención de datos");}
+if(stage===4){s+=category("analisis","Estrategias de análisis","No confundir entrevistar con analizar: explica el tratamiento de la evidencia.");s+=field("analisis","¿Cómo analizarás los datos?","Describe etapas de organización, codificación, estimación o integración según corresponda.");s+=field("ventajas","Ventajas específicas de tu decisión");s+=field("limitaciones","Desventajas y medidas para enfrentarlas");s+=field("bibliografia","Argumentos y citas de la bibliografía del curso");}
+if(stage===5){s+=category("calidad","Criterios de calidad pertinentes","Selecciona criterios compatibles con tu enfoque.");s+=field("calidad_medidas","¿Qué harás para aplicar cada criterio?","Triangulación justificada, auditoría, prueba piloto, validez de instrumentos...");s+=field("etica","Protección de participantes, consentimiento y privacidad");}
+if(stage===6){s+=field("exploratorias","¿Para qué servirán las entrevistas exploratorias con expertos?","¿Qué descubrirás para mejorar la pregunta, el caso o el diseño?");s+=field("ajustes","¿Qué descubrimiento podría obligarte a modificar el proyecto?");}
+if(stage===7){s+='<p class="hint">Registra nombre, organización, función, correo, teléfono institucional, web y argumento de selección. Estos datos permanecen en tu navegador y en archivos privados que descargues.</p>'+d.expertos.map(function(e,i){return '<div class="mini"><div class="row between"><b>Experto '+(i+1)+'</b><button class="secondary" data-remove-expert="'+i+'">Eliminar</button></div>'+["nombre","organizacion","funcion","email","telefono","web","justificacion"].map(function(k){return '<label class="label">'+esc(k.charAt(0).toUpperCase()+k.slice(1))+'</label><input data-expert="'+i+'" data-col="'+k+'" value="'+esc(e[k]||"")+'">' }).join("")+'</div>'}).join("")+'<button class="btn" data-add-expert>+ Añadir experto</button>';}
+if(stage===8){s+='<p class="hint">Usa preguntas abiertas y ordénalas desde el contexto hacia los procesos, conflictos y cierre.</p>'+d.preguntas.map(function(q,i){return '<div class="mini"><div class="row between"><b>Pregunta '+(i+1)+'</b><div class="row"><button class="secondary" data-move="'+i+'" data-dir="-1">↑</button><button class="secondary" data-move="'+i+'" data-dir="1">↓</button><button class="secondary" data-remove-question="'+i+'">Eliminar</button></div></div><label class="label">Pregunta formulada</label><textarea data-question="'+i+'" data-col="texto">'+esc(q.texto||"")+'</textarea><label class="choice"><input type="checkbox" data-question="'+i+'" data-col="clave" '+(q.clave?"checked":"")+'> Marcar como pregunta clave</label></div>'}).join("")+'<button class="btn" data-add-question>+ Añadir pregunta</button>';}
+if(stage===9){s+='<p>Preguntas marcadas como fundamentales: <strong>'+d.preguntas.filter(function(q){return q.clave}).length+'</strong>. La tarea requiere justificar tres o cuatro.</p>'+d.preguntas.filter(function(q){return q.clave}).map(function(q,i){return '<div class="mini"><b>'+esc(q.texto||"Pregunta por formular")+'</b><label class="label">Justificación de su utilidad para la investigación</label><textarea data-keyq="'+d.preguntas.indexOf(q)+'">'+esc(q.justificacion||"")+'</textarea></div>'}).join("");s+=field("integracion","Coherencia entre pregunta, método, evidencia, análisis y entrevistas");s+=field("pendientes","¿Qué falta verificar antes de entregar?");}
+s+='<div class="row between" style="margin-top:18px"><button class="secondary" data-prev '+(stage===0?"disabled":"")+'>← Anterior</button><span class="hint">Se guarda automáticamente en este dispositivo</span><button class="btn" data-next>'+ (stage===9?"Revisar entrega →":"Siguiente →")+'</button></div></div><div class="sticky-card"><div class="card"><h3>¿Qué debes poder defender?</h3><p>'+esc(STEPS[stage][1])+'</p><div class="warn">Seleccionar una categoría no justifica un método. Explica siempre cómo responde tu elección a la pregunta.</div></div><div class="card"><h3>Fundamento</h3><p class="hint">Creswell (2014), Eisenhardt (1989), Jick (1979) y Baxter y Eyles (1997) se citan en la presentación del curso. Verifica cuáles lecturas son obligatorias.</p></div></div></div>';
+return s;}
+function teacher(){return '<div class="card"><h3>Gestión local de grupos e integrantes</h3><p>La lista pública contiene solamente número y tema. Puedes importar el archivo privado de integrantes, editar los datos y crear grupos nuevos. Nada se envía a GitHub automáticamente.</p><div class="warn">Este panel no requiere contraseña porque sus cambios son locales. No subas el archivo privado a un repositorio público.</div><label class="label">Importar la lista privada de integrantes (JSON)</label><input type="file" id="import-roster" accept=".json,application/json"><div class="row" style="margin-top:15px"><button class="btn" data-new-group>+ Nuevo grupo</button><button class="secondary" data-save-roster>Descargar lista privada</button><button class="secondary" data-public-roster>Descargar lista pública</button></div></div><div class="card"><h3>Editar los grupos</h3>'+groups.map(function(g,i){return '<div class="mini"><b>Grupo '+g.id+'</b><div class="two"><div><label class="label">Tema</label><input data-edit-group="'+i+'" data-col="tema" value="'+esc(g.tema)+'"></div><div><label class="label">Integrantes (privados)</label><input data-edit-group="'+i+'" data-col="integrantes" value="'+esc(g.integrantes||"")+'"></div></div><label class="label">Pregunta provisional (editable)</label><textarea data-edit-group="'+i+'" data-col="pregunta_sugerida">'+esc(g.pregunta_sugerida||"")+'</textarea></div>'}).join("")+'</div>'}
+function md(){var g=chosen(),f=d.campos,out="# CM05 · Tarea 5 — Grupo "+gid+"\n\nTema: "+g.tema+"\n\n";out+="## 1. Diseño metodológico (50%)\n";["pregunta","caso","territorio","periodo","proposito","justificar_enfoque","justificar_diseno","fuentes","procedimiento","analisis","ventajas","limitaciones","bibliografia","calidad_medidas","exploratorias","etica"].forEach(function(k){out+="\n### "+k.replace(/_/g," ")+"\n"+(f[k]||"Pendiente")+"\n"});out+="\nEnfoques y categorías: "+JSON.stringify(d.opciones)+"\n\n## 2. Expertos (25%) — documento privado\n";d.expertos.forEach(function(e,i){out+="\nExperto "+(i+1)+": "+JSON.stringify(e)+"\n"});out+="\n## 3. Hilo conductor (25%)\n";d.preguntas.forEach(function(q,i){out+="\n"+(i+1)+". "+(q.texto||"Pendiente")+(q.clave?" [clave]":"")+"\nJustificación: "+(q.justificacion||"Pendiente")+"\n"});out+="\n## Integración\n"+(f.integracion||"Pendiente")+"\n";return out}
+function download(filename,s,type){var url=URL.createObjectURL(new Blob([s],{type:type||"text/plain;charset=utf-8"})),a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url)},2000)}
+function exportView(){return '<div class="card"><h3>Revisar y exportar el trabajo</h3><p class="hint">Grupo '+gid+' · '+esc(chosen().tema)+'</p><p>Estaciones con información: <span class="pct">'+counter()+' / 10</span></p><progress value="'+counter()+'" max="10"></progress><p>Este indicador refleja campos diligenciados, no calidad científica ni nota académica.</p><div class="row"><button class="btn" data-export-md>Descargar borrador (.md)</button><button class="secondary" data-export-json>Guardar respaldo editable (.json)</button><label class="secondary" style="cursor:pointer">Importar respaldo <input style="display:none" type="file" id="import-work" accept=".json"></label></div><div class="warn">La descarga NO es la entrega oficial. Los datos de expertos y estudiantes deben mantenerse en archivos privados. El sitio aún no tiene sincronización en tiempo real.</div></div>'}
+function render(){nav();var root=document.getElementById("root");root.innerHTML=view==="home"?home():view==="teacher"?teacher():!chosen()?'<div class="card">Primero selecciona un grupo.</div>':view==="work"?wstage():exportView();}
+document.addEventListener("click",function(ev){var t=ev.target,el;
+if((el=t.closest("[data-view]"))){view=el.dataset.view;if((view==="work"||view==="export")&&!chosen())view="home";render();return;}
+if((el=t.closest("[data-group]"))){gid=Number(el.dataset.group);localStorage.setItem("cm05_current_group",gid);d=work();stage=0;view="work";render();return;}
+if((el=t.closest("[data-step]"))){stage=Number(el.dataset.step);render();return;}
+if(t.closest("[data-prev]")){stage=Math.max(stage-1,0);render();return;}
+if(t.closest("[data-next]")){if(stage===9){view="export"}else{stage++}render();return;}
+if((el=t.closest("[data-add]"))){var k=el.dataset.add,v=(document.getElementById("new_"+k).value||"").trim();if(!v)return notice("Escribe primero una categoría.");if(!catalog[k].some(function(a){return a.toLowerCase()===v.toLowerCase()}))catalog[k].push(v);localStorage.setItem("cm05_catalog",JSON.stringify(catalog));d.opciones[k]=d.opciones[k]||[];if(!d.opciones[k].includes(v))d.opciones[k].push(v);save();render();return;}
+if(t.closest("[data-add-expert]")){d.expertos.push({});save();render();return;}
+if((el=t.closest("[data-remove-expert]"))){d.expertos.splice(Number(el.dataset.removeExpert),1);save();render();return;}
+if(t.closest("[data-add-question]")){d.preguntas.push({texto:"",clave:false,justificacion:""});save();render();return;}
+if((el=t.closest("[data-remove-question]"))){d.preguntas.splice(Number(el.dataset.removeQuestion),1);save();render();return;}
+if((el=t.closest("[data-move]"))){var i=Number(el.dataset.move),j=i+Number(el.dataset.dir);if(j>=0&&j<d.preguntas.length){var q=d.preguntas.splice(i,1)[0];d.preguntas.splice(j,0,q);save();render()}return;}
+if(t.closest("[data-new-group]")){groups.push({id:Math.max.apply(null,groups.map(function(g){return g.id}))+1,tema:"Tema pendiente de definir",integrantes:"",pregunta_sugerida:""});storeGroups();render();return;}
+if(t.closest("[data-save-roster]")){download("CM05_grupos_PRIVADO.json",JSON.stringify(groups,null,2),"application/json");return;}
+if(t.closest("[data-public-roster]")){download("CM05_grupos_PUBLICO.json",JSON.stringify(groups.map(function(g){return {id:g.id,tema:g.tema,integrantes:"",pregunta_sugerida:g.pregunta_sugerida||""}}),null,2),"application/json");return;}
+if(t.closest("[data-export-json]")){download("CM05_grupo_"+gid+"_respaldo_PRIVADO.json",JSON.stringify({group_id:gid,draft:d},null,2),"application/json");return;}
+if(t.closest("[data-export-md]")){download("CM05_grupo_"+gid+"_tarea5_PRIVADA.md",md(),"text/markdown;charset=utf-8");return;}
+});
+document.addEventListener("input",function(ev){var t=ev.target,k;
+if((k=t.dataset.field)){d.campos[k]=t.value;save();}
+if(t.dataset.expert!==undefined){d.expertos[Number(t.dataset.expert)][t.dataset.col]=t.value;save();}
+if(t.dataset.question!==undefined&&t.dataset.col==="texto"){d.preguntas[Number(t.dataset.question)].texto=t.value;save();}
+if(t.dataset.keyq!==undefined){d.preguntas[Number(t.dataset.keyq)].justificacion=t.value;save();}
+if(t.dataset.editGroup!==undefined){groups[Number(t.dataset.editGroup)][t.dataset.col]=t.value;storeGroups();}
+});
+document.addEventListener("change",function(ev){var t=ev.target;
+if(t.dataset.category){var k=t.dataset.category,v=t.dataset.value;d.opciones[k]=d.opciones[k]||[];d.opciones[k]=d.opciones[k].filter(function(a){return a!==v});if(t.checked)d.opciones[k].push(v);save();}
+if(t.dataset.question!==undefined&&t.dataset.col==="clave"){d.preguntas[Number(t.dataset.question)].clave=t.checked;save();}
+if(t.id==="import-roster"||t.id==="import-work"){var file=t.files&&t.files[0],reader=new FileReader();if(!file)return;reader.onload=function(){try{var obj=JSON.parse(reader.result);if(t.id==="import-roster"){if(!Array.isArray(obj)||!obj.every(function(g){return g.id&&typeof g.tema==="string"}))throw Error("Formato de grupos inválido");groups=obj;storeGroups();notice("Lista privada cargada en este navegador.");}else{if(!obj.draft||obj.group_id!==gid)throw Error("El respaldo no corresponde al grupo");d=obj.draft;save();notice("Borrador restaurado.");}render();}catch(e){notice("No se importó: "+e.message)}};reader.readAsText(file);}
+});
+render();
+})();
+</script></body></html>
