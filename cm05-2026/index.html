@@ -48,7 +48,7 @@ footer{text-align:center;color:#6f8487;font-size:12px;padding:22px}
 "use strict";
 var C=window.CM05_CONFIG||{},ready=!!(C.supabaseUrl&&C.publishableKey);
 var sb=(ready&&window.supabase)?window.supabase.createClient(C.supabaseUrl,C.publishableKey):null;
-var user=null, membership=null,groups=[],allAnswers=[],allMembers=[],myGroup=null,step=0,tab="work";
+var user=null, membership=null,groups=[],allAnswers=[],allMembers=[],myGroup=null,step=0,tab="work",authListenerRegistered=false;
 var A={},pending={},timers={},channel=null,teacher=false,busy=false;
 var oldTopics=[
 "poblaciones de aves migratorias","rellenos sanitarios","marine protected areas in Chilean Patagonia",
@@ -185,7 +185,7 @@ if(user){var m=await sb.from("cm05_members").select("email,group_id,teacher").eq
 membership=m.error?null:m.data;teacher=!!(membership&&membership.teacher);
 if(membership){tab=teacher?"dashboard":"work";await getData();subscribe()}}
 render();
-sb.auth.onAuthStateChange(function(event,session){var next=session?session.user:null;if((next&&(!user||next.id!==user.id))||(!next&&user)){user=next;membership=null;teacher=false;myGroup=null;groups=[];allAnswers=[];allMembers=[];A={};setTimeout(initialize,10)}});
+if(!authListenerRegistered){authListenerRegistered=true;sb.auth.onAuthStateChange(function(event,session){var next=session?session.user:null;if((next&&(!user||next.id!==user.id))||(!next&&user)){user=next;membership=null;teacher=false;myGroup=null;groups=[];allAnswers=[];allMembers=[];A={};setTimeout(initialize,10)}});}
 }
 document.addEventListener("click",async function(e){
 var t=e.target,b=t.closest("button");if(!b)return;
