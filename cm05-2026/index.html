@@ -47,9 +47,25 @@ footer{text-align:center;color:#6f8487;font-size:12px;padding:22px}
 (function(){
 "use strict";
 var C=window.CM05_CONFIG||{},ready=!!(C.supabaseUrl&&C.publishableKey);
-var sb=(ready&&window.supabase)?window.supabase.createClient(C.supabaseUrl,C.publishableKey):null;
-var user=null, membership=null,groups=[],allAnswers=[],allMembers=[],myGroup=null,step=0,tab="work",authListenerRegistered=false;
-var A={},pending={},timers={},channel=null,teacher=false,busy=false;
+var hashParams=new URLSearchParams(location.hash.slice(1));
+var newKey=hashParams.get("admin")||hashParams.get("key"), newTeacher=!!hashParams.get("admin"), newGroup=Number(hashParams.get("g")||0);
+if(newKey){
+sessionStorage.setItem("cm05_link_key",newKey);
+sessionStorage.setItem("cm05_link_role",newTeacher?"docente":"grupo");
+sessionStorage.setItem("cm05_link_group",String(newTeacher?0:newGroup));
+history.replaceState(null,"",location.pathname+location.search);
+}
+var accessKey=sessionStorage.getItem("cm05_link_key")||"";
+var teacher=sessionStorage.getItem("cm05_link_role")==="docente";
+var linkedGroup=Number(sessionStorage.getItem("cm05_link_group")||0);
+var sb=(ready&&accessKey&&window.supabase)?window.supabase.createClient(C.supabaseUrl,C.publishableKey,{
+ global:{headers:{"x-cm05-key":accessKey}},
+ auth:{persistSession:false,autoRefreshToken:false}
+}):null;
+var user=accessKey?{id:null}:null;
+var membership=accessKey?{teacher:teacher,group_id:linkedGroup}:null;
+var groups=[],allAnswers=[],allMembers=[],myGroup=null,step=0,tab=teacher?"dashboard":"work";
+var A={},pending={},timers={},channel=null,busy=false,accessError="";
 var oldTopics=[
 "poblaciones de aves migratorias","rellenos sanitarios","marine protected areas in Chilean Patagonia",
 "Sustainable development","Salmonicultura y desarrollo territorial en Chiloé",
@@ -105,10 +121,10 @@ return out;
 function nav(){
 var nav=$id("nav");
 if(!ready){nav.innerHTML="<button class='active'>Presentación</button>";return}
-if(!user){nav.innerHTML="<button class='active'>Acceso</button>";return}
+if(!accessKey){nav.innerHTML="<button class='active'>Enlace de grupo</button>";return}
 nav.innerHTML=teacher?
-'<button data-tab="dashboard" class="'+(tab==="dashboard"?"active":"")+'">Vista del curso</button><button data-tab="teacher" class="'+(tab==="teacher"?"active":"")+'">Administrar grupos</button><button data-tab="work" class="'+(tab==="work"?"active":"")+'">Revisar proyecto</button><button data-tab="export" class="'+(tab==="export"?"active":"")+'">Archivo maestro</button><button data-out>Salir</button>':
-'<button data-tab="work" class="'+(tab==="work"?"active":"")+'">Mi investigación</button><button data-tab="export" class="'+(tab==="export"?"active":"")+'">Descargar TXT</button><button data-out>Cerrar sesión</button>';
+'<button data-tab="dashboard" class="'+(tab==="dashboard"?"active":"")+'">Vista del curso</button><button data-tab="teacher" class="'+(tab==="teacher"?"active":"")+'">Administrar grupos</button><button data-tab="work" class="'+(tab==="work"?"active":"")+'">Revisar proyecto</button><button data-tab="export" class="'+(tab==="export"?"active":"")+'">Archivo maestro</button>':
+'<button data-tab="work" class="'+(tab==="work"?"active":"")+'">Mi investigación</button><button data-tab="export" class="'+(tab==="export"?"active":"")+'">Descargar TXT</button>';
 }
 function preconfig(){
 var s='<div class="card"><span class="badge">PREPARADO · FALTA CONECTAR</span><h3>Tu laboratorio ya está publicado, pero aún no recibe respuestas colectivas.</h3><p>Para permitir edición simultánea y permisos por grupo, el profesor debe conectar una base de datos Supabase siguiendo <strong>SUPABASE_SETUP.sql</strong>. Hasta entonces, esta pantalla no solicita ni almacena datos de estudiantes.</p><div class="warn">No introduzcas respuestas ni contactos personales en una versión sin autenticación.</div></div>';
@@ -116,8 +132,8 @@ s+='<div class="card"><h3>Los 16 temas iniciales</h3><div class="grid">'+oldTopi
 s+='<div class="card"><h3>Ruta metodológica</h3>'+steps.map(function(v,i){return "<div class='mini'><b>"+(i+1)+". "+esc(v.title)+"</b><p class='hint'>"+esc(v.intro)+"</p></div>"}).join("")+'</div>';
 return s;
 }
-function login(){return '<div class="card"><span class="badge">ACCESO PERSONAL</span><h3>Entra a tu espacio de investigación</h3><p>Accede con el correo que el profesor haya registrado para tu grupo. Recibirás un enlace de ingreso; no necesitas cuenta de GitHub ni subir archivos.</p><label class="label">Correo electrónico autorizado</label><input type="email" id="email" placeholder="correo@universidad.edu"><div style="margin-top:12px"><button class="btn" data-login>Enviar enlace de acceso</button></div><p class="hint">Tus respuestas solo serán editables por integrantes autorizados de tu grupo. El profesor podrá revisar todos los trabajos.</p></div>'}
-function awaiting(){return '<div class="card"><h3>El correo aún no está asignado a un grupo</h3><p>Has ingresado como <b>'+esc(user.email)+'</b>, pero este correo no figura en la lista del profesor. Solicita que te asigne al grupo correspondiente.</p><button class="secondary" data-out>Cerrar sesión</button></div>'}
+function login(){return '<div class="card"><span class="badge">ACCESO DIRECTO</span><h3>Solicita el enlace de tu grupo al profesor</h3><p>Los integrantes de cada grupo reciben una dirección privada. Al abrirla, el proyecto aparece automáticamente, sin correos, contraseñas ni cuentas de GitHub.</p><div class="warn">Para proteger los trabajos, no se permite entrar seleccionando simplemente el número de otro grupo. Usa el enlace exclusivo de tu equipo.</div></div>'}
+function awaiting(){return '<div class="card"><h3>Enlace inválido o sin permiso</h3><p>'+esc(accessError||"El enlace no corresponde a un grupo disponible. Solicita el correcto al profesor.")+'</p></div>'}
 function progress(id){var rs=allAnswers.filter(function(a){return a.group_id===id}),keys=new Set(rs.map(function(x){return x.field_key}));return steps.filter(function(s){return (s.fields||[]).some(function(f){return keys.has(f[0])})||(s.cats||[]).some(function(k){return keys.has("c_"+k)})||(s.experts&&keys.has("expert_count"))||(s.questions&&keys.has("question_count"))||(s.justifications&&keys.has("integracion"))}).length}
 function dashboard(){return '<div class="card"><div class="row between"><h3>Progreso de la clase en tiempo real</h3><span class="badge">'+groups.length+' grupos</span></div><p>Selecciona un grupo para revisar sus avances y proyectar sus argumentos. Los estudiantes no pueden editar proyectos ajenos.</p><div class="grid">'+groups.map(function(g){return '<button class="group-card" data-select="'+g.id+'"><span class="tag">GRUPO '+g.id+'</span><strong>'+esc(g.tema)+'</strong><small>'+esc(g.integrantes||"Integrantes pendientes")+'</small><progress value="'+progress(g.id)+'" max="10"></progress><small>'+progress(g.id)+' / 10 estaciones con actividad</small></button>'}).join("")+'</div></div>'}
 function cat(k){var sel=fieldValue("c_"+k)||[],custom=fieldValue("other_"+k)||"";if(!Array.isArray(sel))sel=[];var vals=categories[k].concat(custom.split("\n").map(function(a){return a.trim()}).filter(function(a){return a&&!categories[k].includes(a)}));return '<div class="mini"><strong>'+esc(k.charAt(0).toUpperCase()+k.slice(1))+'</strong><div class="choices">'+vals.map(function(v){return '<label class="choice"><input type="checkbox" data-choice="'+k+'" data-option="'+esc(v)+'" '+(sel.includes(v)?"checked":"")+'> '+esc(v)+'</label>'}).join("")+'</div><label class="label">Añadir otras categorías (una por línea)</label><textarea data-field="other_'+k+'" placeholder="Otras opciones justificadas...">'+esc(custom)+'</textarea></div>'}
@@ -130,11 +146,9 @@ var s=steps[step],val=Object.keys(A).filter(function(k){return !!A[k]}).length;
 return '<div class="card"><div class="row between"><h3>Grupo '+myGroup.id+' · '+esc(myGroup.tema)+'</h3><span class="badge" id="save-status">Conectado · Guardado automático</span></div><p class="hint">'+esc(myGroup.integrantes||"Integrantes por registrar")+'</p><div class="steps">'+steps.map(function(x,i){return '<button data-step="'+i+'" class="'+(i===step?"active":"")+'">'+(i+1)+'</button>'}).join("")+'</div></div><div class="card"><span class="badge">ESTACIÓN '+(step+1)+' / 10</span><h3 style="margin-top:10px">'+esc(s.title)+'</h3><p class="muted">'+esc(s.intro)+'</p>'+(s.cats||[]).map(cat).join("")+(s.fields||[]).map(function(f){return inputField(f[0],f[1])}).join("")+(s.experts?directory():"")+(s.questions?questions(false):"")+(s.justifications?questions(true):"")+'<div class="row between" style="margin-top:20px"><button class="secondary" data-prev '+(step===0?"disabled":"")+'>← Anterior</button><span class="hint">Las modificaciones se sincronizan por campo.</span><button class="btn" data-next>'+ (step===9?"Descargar →":"Siguiente →")+'</button></div></div><div class="card"><h3>¿Cómo se evalúa esta tarea?</h3><p>Justificación del método: <b>50%</b>. Directorio de expertos: <b>25%</b>. Hilo conductor de preguntas: <b>25%</b>.</p><p class="hint">El estudio de caso es el diseño solicitado en CM05. La metodología debe justificarse con bibliografía del curso.</p></div>'}
 function downloadPage(){return '<div class="card"><h3>Descargar mi trabajo como texto</h3><p>Puedes llevarte todo lo que hayas escrito en un solo archivo TXT. No necesitas subir documentos ni entrar a GitHub.</p><button class="btn" data-student-export>Descargar mi TXT</button><div class="warn">El archivo contiene información personal que hayas escrito sobre expertos. Consérvalo en privado.</div></div>'}
 function teacherPanel(){
-var opts=groups.map(function(g){return '<option value="'+g.id+'">'+g.id+' · '+esc(g.tema)+'</option>'}).join("");
-return '<div class="card"><h3>Administrar grupos y permisos</h3><p>Los estudiantes entran únicamente con correos autorizados. Solo tú puedes asignar grupos, editar sus integrantes y añadir equipos.</p><div class="two"><div><label class="label">Nuevo grupo · tema</label><input id="new-topic" placeholder="Título provisional"><button class="secondary" data-add-group style="margin-top:8px">Crear grupo</button></div><div><label class="label">Cargar los 16 temas iniciales</label><p class="hint">Solo si el registro está vacío.</p><button class="secondary" data-seed>Crear temas iniciales</button></div></div></div>'+
-'<div class="card"><h3>Asignar un correo a un grupo</h3><p class="hint">La persona deberá verificar su correo al entrar. No requiere acceso al repositorio.</p><div class="two"><div><label class="label">Correo autorizado</label><input id="add-email" type="email" placeholder="estudiante@universidad.edu"></div><div><label class="label">Grupo asignado</label><select id="add-member-group">'+opts+'</select></div></div><button class="btn" data-add-member style="margin-top:12px">Guardar asignación</button><div class="mini">'+allMembers.filter(function(m){return !m.teacher}).map(function(m){return '<div class="row between"><small>'+esc(m.email)+' · grupo '+esc(m.group_id)+'</small><button class="secondary" data-remove-member="'+esc(m.email)+'">Revocar</button></div>'}).join("")+'</div></div>'+
-'<div class="card"><h3>Grupos e integrantes</h3>'+groups.map(function(g){return '<div class="mini"><b>Grupo '+g.id+'</b><label class="label">Tema</label><input data-group-field="tema" data-groupid="'+g.id+'" value="'+esc(g.tema)+'"><label class="label">Integrantes</label><input data-group-field="integrantes" data-groupid="'+g.id+'" value="'+esc(g.integrantes||"")+'"><label class="label">Pregunta provisional</label><textarea data-group-field="pregunta_sugerida" data-groupid="'+g.id+'">'+esc(g.pregunta_sugerida||"")+'</textarea><button class="secondary" data-update-group="'+g.id+'">Guardar grupo</button></div>'}).join("")+'</div>'+
-'<div class="card"><h3>Importar datos por copia de texto (solo profesor)</h3><p class="hint">Pega el contenido JSON de la lista privada que ya tienes. No se solicita subir un archivo.</p><textarea id="paste-roster" placeholder="Pega aquí [{&quot;id&quot;:1,&quot;tema&quot;:&quot;...&quot;,&quot;integrantes&quot;:&quot;...&quot;}, ...]"></textarea><button class="secondary" data-paste-roster>Guardar lista privada en la base de datos</button></div>';
+return '<div class="card"><h3>Administrar los grupos</h3><p>Todos los estudiantes entran con el enlace privado de su grupo. No necesitan contraseñas ni correos y no pueden subir archivos. Comparte cada enlace únicamente con el equipo correspondiente.</p><div class="two"><div><label class="label">Nuevo grupo · tema</label><input id="new-topic" placeholder="Título provisional"><button class="secondary" data-add-group style="margin-top:8px">Crear grupo y obtener enlace</button></div><div><p class="hint">Los 16 grupos iniciales ya están creados y sus enlaces figuran en tu archivo privado de distribución. Puedes añadir nuevos.</p></div></div></div>'+
+'<div class="card"><h3>Temas e integrantes</h3>'+groups.map(function(g){return '<div class="mini"><b>Grupo '+g.id+'</b><label class="label">Tema</label><input data-group-field="tema" data-groupid="'+g.id+'" value="'+esc(g.tema)+'"><label class="label">Integrantes</label><input data-group-field="integrantes" data-groupid="'+g.id+'" value="'+esc(g.integrantes||"")+'"><label class="label">Pregunta provisional</label><textarea data-group-field="pregunta_sugerida" data-groupid="'+g.id+'">'+esc(g.pregunta_sugerida||"")+'</textarea><button class="secondary" data-update-group="'+g.id+'">Guardar grupo</button></div>'}).join("")+'</div>'+
+'<div class="card"><h3>Importar datos por texto</h3><p class="hint">Si deseas sustituir temas e integrantes, pega aquí la lista JSON privada. No se permite subir archivos.</p><textarea id="paste-roster" placeholder="Pega la lista JSON..."></textarea><button class="secondary" data-paste-roster>Guardar lista en la base de datos</button></div>';
 }
 function quoteCSV(x){return '"'+String(x===undefined||x===null?"":typeof x==="object"?JSON.stringify(x):x).replace(/"/g,'""')+'"'}
 function csvMaster(){
@@ -147,51 +161,50 @@ return "\ufeff"+rows.join("\r\n");
 function exportMaster(){return '<div class="card"><h3>Tu archivo maestro del curso</h3><p>Todas las respuestas están registradas centralmente. Descarga un solo CSV compatible con Excel: contiene una fila por grupo, sus integrantes, temas y todos los campos de su tarea, incluidos los contactos de expertos.</p><button class="btn" data-master>Descargar archivo maestro CM05.csv</button><p class="hint">El archivo maestro es privado y solo el usuario docente autorizado puede generarlo. Los estudiantes pueden descargar únicamente su TXT.</p></div>'}
 function render(){
 nav();var root=$id("root");
-if(!ready||!sb){root.innerHTML=preconfig();return}
-if(!user){root.innerHTML=login();return}
+if(!ready){root.innerHTML=preconfig();return}
+if(!accessKey||!sb){root.innerHTML=login();return}
 if(!membership){root.innerHTML=awaiting();return}
 root.innerHTML=tab==="dashboard"&&teacher?dashboard():tab==="teacher"&&teacher?teacherPanel():tab==="export"?(teacher?exportMaster():downloadPage()):editor();
 }
 async function getData(){
 if(!sb||!membership)return;
-if(teacher){var results=await Promise.all([sb.from("cm05_groups").select("*").order("id"),sb.from("cm05_answers").select("*"),sb.from("cm05_members").select("*")]);if(results.some(function(x){return x.error})){message(results.filter(function(x){return x.error}).map(function(x){return x.error.message}).join(" | "));return}
-groups=results[0].data||[];allAnswers=results[1].data||[];allMembers=results[2].data||[];
+if(teacher){
+var results=await Promise.all([sb.from("cm05_groups").select("*").order("id"),sb.from("cm05_answers").select("*")]);
+if(results.some(function(x){return x.error})){accessError="No fue posible consultar el panel docente.";message(accessError);return}
+groups=results[0].data||[];allAnswers=results[1].data||[];
+if(groups.length<2){membership=null;accessError="El enlace no tiene permisos de docente.";return}
 if(myGroup){var match=groups.find(function(g){return g.id===myGroup.id});if(match)myGroup=match}
-}else{var id=membership.group_id;var a=await Promise.all([sb.from("cm05_groups").select("*").eq("id",id).maybeSingle(),sb.from("cm05_answers").select("*").eq("group_id",id)]);
-if(a[0].error||a[1].error){message("Error de lectura de datos. Comprueba permisos del grupo.");return}
-myGroup=a[0].data;groups=myGroup?[myGroup]:[];allAnswers=a[1].data||[]}
-if(myGroup){A=flattenAns(allAnswers.filter(function(x){return x.group_id===myGroup.id}))}
+}else{
+var id=linkedGroup;var a=await Promise.all([sb.from("cm05_groups").select("*").eq("id",id).maybeSingle(),sb.from("cm05_answers").select("*").eq("group_id",id)]);
+if(a[0].error||a[1].error){accessError="No se pudieron leer los datos. Revisa tu enlace.";membership=null;return}
+myGroup=a[0].data;groups=myGroup?[myGroup]:[];allAnswers=a[1].data||[];
+if(!myGroup){accessError="Enlace incorrecto o desactivado.";membership=null;return}
 }
-function subscribe(){
-if(!sb)return;
-if(channel)sb.removeChannel(channel);
-channel=sb.channel("cm05-live-"+(teacher?"teacher":membership.group_id))
-.on("postgres_changes",{event:"*",schema:"public",table:"cm05_answers"},function(payload){
-var row=payload.new;if(!row)return;
-if(!teacher&&row.group_id!==membership.group_id)return;
-var ix=allAnswers.findIndex(function(x){return x.group_id===row.group_id&&x.field_key===row.field_key});
-if(ix>=0)allAnswers[ix]=row;else allAnswers.push(row);
-if(myGroup&&row.group_id===myGroup.id&&!pending[row.field_key]){
-A[row.field_key]=row.body&&row.body.value!==undefined?row.body.value:"";
-var input=document.querySelector('[data-field="'+row.field_key+'"]');
-if(input&&document.activeElement!==input)input.value=String(A[row.field_key]);}
+if(myGroup){
+var newer=flattenAns(allAnswers.filter(function(x){return x.group_id===myGroup.id}));
+Object.keys(newer).forEach(function(k){if(pending[k]===undefined){
+var input=document.querySelector('[data-field="'+k+'"]');
+if(!input||document.activeElement!==input)A[k]=newer[k]}})
+}
+}
+async function refresh(){
+if(!membership||!sb||Object.keys(pending).length)return;
+await getData();
+if(!membership){render();return}
 if(teacher&&tab==="dashboard")render();
-}).subscribe();
 }
 async function initialize(){
-if(!sb){render();return}
-var rs=await sb.auth.getSession();user=rs.data.session?rs.data.session.user:null;
-if(user){var m=await sb.from("cm05_members").select("email,group_id,teacher").eq("email",user.email.toLowerCase()).maybeSingle();
-membership=m.error?null:m.data;teacher=!!(membership&&membership.teacher);
-if(membership){tab=teacher?"dashboard":"work";await getData();subscribe()}}
 render();
-if(!authListenerRegistered){authListenerRegistered=true;sb.auth.onAuthStateChange(function(event,session){var next=session?session.user:null;if((next&&(!user||next.id!==user.id))||(!next&&user)){user=next;membership=null;teacher=false;myGroup=null;groups=[];allAnswers=[];allMembers=[];A={};setTimeout(initialize,10)}});}
+if(!sb||!membership)return;
+await getData();
+render();
+if(!membership)return;
+setInterval(refresh,teacher?6000:9000);
 }
 document.addEventListener("click",async function(e){
 var t=e.target,b=t.closest("button");if(!b)return;
 if(b.dataset.tab){await flush();tab=b.dataset.tab;render();return}
-if(b.hasAttribute("data-out")){await flush();await sb.auth.signOut();user=null;membership=null;teacher=false;myGroup=null;render();return}
-if(b.hasAttribute("data-login")){var email=$id("email").value.trim().toLowerCase();if(!email||!email.includes("@"))return message("Introduce un correo válido.");var r=await sb.auth.signInWithOtp({email:email,options:{emailRedirectTo:location.origin+location.pathname}});message(r.error?("No se envió: "+r.error.message):"Revisa tu correo para ingresar al laboratorio.");return}
+
 if(b.dataset.step!==undefined){await flush();step=Number(b.dataset.step);render();return}
 if(b.hasAttribute("data-prev")){await flush();step=Math.max(0,step-1);render();return}
 if(b.hasAttribute("data-next")){await flush();if(step===9)tab="export";else step++;render();return}
@@ -201,7 +214,17 @@ if(b.hasAttribute("data-add-question")){setV("question_count",Number(fieldValue(
 if(b.hasAttribute("data-student-export")){await flush();download("CM05_grupo_"+myGroup.id+"_Tarea5.txt",textDraft(myGroup,A));return}
 if(b.hasAttribute("data-master")){if(!teacher)return;await getData();download("CM05_2026_ARCHIVO_MAESTRO.csv",csvMaster(),"text/csv;charset=utf-8");return}
 if(b.hasAttribute("data-seed")){if(!teacher||groups.length)return message("Solo puedes inicializar una base vacía.");var rs=await sb.from("cm05_groups").insert(oldTopics.map(function(tema,i){return {id:i+1,tema:tema}}));if(rs.error)message(rs.error.message);else{await getData();render();message("Se crearon 16 grupos iniciales.")}return}
-if(b.hasAttribute("data-add-group")){if(!teacher)return;var name=$id("new-topic").value.trim()||"Tema pendiente de definir",id=Math.max(0,...groups.map(function(g){return g.id}))+1;var r=await sb.from("cm05_groups").insert({id:id,tema:name});if(r.error)message(r.error.message);else{await getData();render();message("Grupo creado")};return}
+if(b.hasAttribute("data-add-group")){if(!teacher)return;
+var name=$id("new-topic").value.trim()||"Tema pendiente de definir",id=Math.max(0,...groups.map(function(g){return g.id}))+1;
+var random=crypto.getRandomValues(new Uint8Array(32)),secret=Array.from(random).map(function(x){return x.toString(16).padStart(2,"0")}).join("");
+var digest=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(secret)),tokenHash=Array.from(new Uint8Array(digest)).map(function(x){return x.toString(16).padStart(2,"0")}).join("");
+var r=await sb.from("cm05_groups").insert({id:id,tema:name});
+if(r.error){message("No se pudo crear el grupo: "+r.error.message);return}
+var l=await sb.from("cm05_access_links").insert({token_hash:tokenHash,group_id:id,role:"grupo"});
+if(l.error){message("Grupo creado, pero falta emitir el enlace: "+l.error.message);return}
+var link=location.origin+location.pathname+"#g="+id+"&key="+secret;
+download("CM05_Grupo_"+id+"_ENLACE_PRIVADO.txt","Acceso del grupo "+id+" (compartir solo con sus integrantes)\n"+link+"\n");
+await getData();render();message("Nuevo grupo creado. Su enlace privado se descargó en TXT.");return}
 if(b.hasAttribute("data-add-member")){if(!teacher)return;var email=$id("add-email").value.trim().toLowerCase(),group_id=Number($id("add-member-group").value);if(!email.includes("@")||!group_id)return message("Correo y grupo requeridos.");var r=await sb.from("cm05_members").upsert({email:email,group_id:group_id,teacher:false},{onConflict:"email"});if(r.error)message(r.error.message);else{await getData();render();message("Acceso asignado")};return}
 if(b.dataset.removeMember){if(!teacher)return;var r=await sb.from("cm05_members").delete().eq("email",b.dataset.removeMember).eq("teacher",false);if(r.error)message(r.error.message);else{await getData();render()};return}
 if(b.dataset.updateGroup){if(!teacher)return;var id=Number(b.dataset.updateGroup),p={};document.querySelectorAll('[data-groupid="'+id+'"]').forEach(function(x){p[x.dataset.groupField]=x.value});var r=await sb.from("cm05_groups").update(p).eq("id",id);if(r.error)message(r.error.message);else{await getData();render();message("Grupo actualizado")};return}
