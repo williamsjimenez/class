@@ -132,8 +132,9 @@ s+='<div class="card"><h3>Los 16 temas iniciales</h3><div class="grid">'+oldTopi
 s+='<div class="card"><h3>Ruta metodológica</h3>'+steps.map(function(v,i){return "<div class='mini'><b>"+(i+1)+". "+esc(v.title)+"</b><p class='hint'>"+esc(v.intro)+"</p></div>"}).join("")+'</div>';
 return s;
 }
-function login(){return '<div class="card"><span class="badge">ACCESO DIRECTO</span><h3>Solicita el enlace de tu grupo al profesor</h3><p>Los integrantes de cada grupo reciben una dirección privada. Al abrirla, el proyecto aparece automáticamente, sin correos, contraseñas ni cuentas de GitHub.</p><div class="warn">Para proteger los trabajos, no se permite entrar seleccionando simplemente el número de otro grupo. Usa el enlace exclusivo de tu equipo.</div></div>'}
-function awaiting(){return '<div class="card"><h3>Enlace inválido o sin permiso</h3><p>'+esc(accessError||"El enlace no corresponde a un grupo disponible. Solicita el correcto al profesor.")+'</p></div>'}
+function accessForm(){return '<div class="mini"><label class="label" for="student-link">Pega el enlace privado completo que recibiste del profesor</label><textarea id="student-link" placeholder="https://williamsjimenez.github.io/class/cm05-2026/#g=...&key=..."></textarea><button class="btn" data-open-private-link type="button" style="margin-top:8px">Entrar a mi grupo</button><p class="hint">Si el enlace no abre al pulsarlo desde WhatsApp o ChatGPT, cópialo completo y pégalo aquí. No lo compartas con personas ajenas a tu grupo.</p></div>'}
+function login(){return '<div class="card"><span class="badge">ACCESO DIRECTO</span><h3>Ingresa al trabajo de tu grupo</h3><p>Abre tu enlace privado o pégalo a continuación. No necesitas correo, contraseña ni cuenta de GitHub.</p>'+accessForm()+'<div class="warn">Para proteger los trabajos, cada grupo tiene su propio enlace privado.</div></div>'}
+function awaiting(){return '<div class="card"><h3>Enlace inválido o sin permiso</h3><p>'+esc(accessError||"No se pudo abrir el grupo. Comprueba que copiaste el enlace completo.")+'</p>'+accessForm()+'</div>'}
 function progress(id){var rs=allAnswers.filter(function(a){return a.group_id===id}),keys=new Set(rs.map(function(x){return x.field_key}));return steps.filter(function(s){return (s.fields||[]).some(function(f){return keys.has(f[0])})||(s.cats||[]).some(function(k){return keys.has("c_"+k)})||(s.experts&&keys.has("expert_count"))||(s.questions&&keys.has("question_count"))||(s.justifications&&keys.has("integracion"))}).length}
 function dashboard(){return '<div class="card"><div class="row between"><h3>Progreso de la clase en tiempo real</h3><span class="badge">'+groups.length+' grupos</span></div><p>Selecciona un grupo para revisar sus avances y proyectar sus argumentos. Los estudiantes no pueden editar proyectos ajenos.</p><div class="grid">'+groups.map(function(g){return '<button class="group-card" data-select="'+g.id+'"><span class="tag">GRUPO '+g.id+'</span><strong>'+esc(g.tema)+'</strong><small>'+esc(g.integrantes||"Integrantes pendientes")+'</small><progress value="'+progress(g.id)+'" max="10"></progress><small>'+progress(g.id)+' / 10 estaciones con actividad</small></button>'}).join("")+'</div></div>'}
 function cat(k){var sel=fieldValue("c_"+k)||[],custom=fieldValue("other_"+k)||"";if(!Array.isArray(sel))sel=[];var vals=categories[k].concat(custom.split("\n").map(function(a){return a.trim()}).filter(function(a){return a&&!categories[k].includes(a)}));return '<div class="mini"><strong>'+esc(k.charAt(0).toUpperCase()+k.slice(1))+'</strong><div class="choices">'+vals.map(function(v){return '<label class="choice"><input type="checkbox" data-choice="'+k+'" data-option="'+esc(v)+'" '+(sel.includes(v)?"checked":"")+'> '+esc(v)+'</label>'}).join("")+'</div><label class="label">Añadir otras categorías (una por línea)</label><textarea data-field="other_'+k+'" placeholder="Otras opciones justificadas...">'+esc(custom)+'</textarea></div>'}
@@ -203,6 +204,21 @@ setInterval(refresh,teacher?6000:9000);
 }
 document.addEventListener("click",async function(e){
 var t=e.target,b=t.closest("button");if(!b)return;
+if(b.hasAttribute("data-open-private-link")){
+  var raw=($id("student-link")&&$id("student-link").value||"").trim();
+  try {
+    var u=new URL(raw,location.href),samePath=u.pathname.replace(/index\.html$/,"")===location.pathname.replace(/index\.html$/,"");
+    if(u.origin!==location.origin||!samePath)throw Error("El enlace no corresponde a esta clase.");
+    var hp=new URLSearchParams(u.hash.slice(1)),groupNumber=Number(hp.get("g")),groupToken=hp.get("key")||"";
+    if(!Number.isInteger(groupNumber)||groupNumber<1||!/^[A-Za-z0-9_-]{40,100}$/.test(groupToken))
+      throw Error("Falta la clave privada o el número del grupo. Copia el enlace completo.");
+    sessionStorage.setItem("cm05_link_key",groupToken);
+    sessionStorage.setItem("cm05_link_role","grupo");
+    sessionStorage.setItem("cm05_link_group",String(groupNumber));
+    location.assign(location.pathname+location.search+"#g="+groupNumber+"&key="+encodeURIComponent(groupToken));
+  }catch(ex){message("Acceso: "+ex.message)}
+  return;
+}
 if(b.dataset.tab){await flush();tab=b.dataset.tab;render();return}
 
 if(b.dataset.step!==undefined){await flush();step=Number(b.dataset.step);render();return}
