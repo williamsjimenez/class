@@ -215,7 +215,7 @@ if(b.hasAttribute("data-open-private-link")){
     sessionStorage.setItem("cm05_link_key",groupToken);
     sessionStorage.setItem("cm05_link_role","grupo");
     sessionStorage.setItem("cm05_link_group",String(groupNumber));
-    location.assign(location.pathname+location.search+"#g="+groupNumber+"&key="+encodeURIComponent(groupToken));
+    location.reload();
   }catch(ex){message("Acceso: "+ex.message)}
   return;
 }
